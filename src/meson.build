@@ -14,6 +14,7 @@ d3d9_src = [
   'd3d9_query.cpp',
   'd3d9_vertex_declaration.cpp',
   'd3d9_shader_validator.cpp',
+  'd3d9_volume.cpp',
 ]
 
 d3d9_ld_args      = []

@@ -24,7 +24,7 @@ HRESULT STDMETHODCALLTYPE D3D9Surface::QueryInterface(REFIID riid, void** ppvObj
   }
 
   Logger::warn("D3D9Surface::QueryInterface: Unknown interface query");
-  //Logger::warn(str::format(riid));
+  Logger::warn(riid);
   return E_NOINTERFACE;
 }
 

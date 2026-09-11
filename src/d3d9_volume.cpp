@@ -1,0 +1,45 @@
+#include "d3d9_volume.h"
+
+#include "d3d9_device.h"
+#include "d3d9_texture.h"
+
+D3D9Volume::D3D9Volume(IDirect3DDevice9* device, d3d8::IDirect3DVolume8* d3d8Volume)
+  : m_device ( device )
+  , m_d3d8 ( d3d8Volume ) {
+}
+
+D3D9Volume::~D3D9Volume() { }
+
+HRESULT STDMETHODCALLTYPE D3D9Volume::QueryInterface(REFIID riid, void** ppvObject) {
+  if (ppvObject == nullptr)
+    return E_POINTER;
+
+  *ppvObject = nullptr;
+
+  if (riid == __uuidof(IUnknown)
+    || riid == __uuidof(IDirect3DResource9)
+    || riid == __uuidof(IDirect3DVolume9)) {
+    *ppvObject = this->IncrementRef();
+    return S_OK;
+  }
+
+  Logger::warn("D3D9Volume::QueryInterface: Unknown interface query");
+  Logger::warn(riid);
+  return E_NOINTERFACE;
+}
+
+HRESULT STDMETHODCALLTYPE D3D9Volume::GetDesc(D3DVOLUME_DESC *pDesc) {
+  Logger::warn("D3D9Volume::GetDesc: Stub!");
+  return D3D_OK;
+}
+
+HRESULT STDMETHODCALLTYPE D3D9Volume::LockBox(D3DLOCKED_BOX* pLockedBox, CONST D3DBOX* pBox, DWORD Flags) {
+  Logger::info("D3D9Volume::LockBox:");
+  return m_d3d8->LockBox(reinterpret_cast<d3d8::D3DLOCKED_BOX*>(pLockedBox),
+                          reinterpret_cast<CONST d3d8::D3DBOX*>(pBox), Flags);
+}
+
+HRESULT STDMETHODCALLTYPE D3D9Volume::UnlockBox() {
+  Logger::info("D3D9Volume::UnlockBox:");
+  return m_d3d8->UnlockBox();
+}

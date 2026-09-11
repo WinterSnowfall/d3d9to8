@@ -105,14 +105,14 @@ public:
   }
 
   d3d8::IDirect3DTexture8* GetD3D8Texture() {
-    return m_d3d8;
+    return m_d3d8.ptr();
   }
 
 private:
 
   IDirect3DDevice9* m_device = nullptr;
 
-  d3d8::IDirect3DTexture8* m_d3d8 = nullptr;
+  ComObject<d3d8::IDirect3DTexture8> m_d3d8;
 
 };
 
@@ -120,7 +120,7 @@ class D3D9TextureCube : public ComObjectClamp<IDirect3DCubeTexture9> {
 
 public:
 
-  D3D9TextureCube(IDirect3DDevice9* device, d3d8::IDirect3DCubeTexture8* d3d8Texture);
+  D3D9TextureCube(IDirect3DDevice9* device, d3d8::IDirect3DCubeTexture8* d3d8CubeTexture);
 
   ~D3D9TextureCube();
 
@@ -223,13 +223,123 @@ public:
   }
 
   d3d8::IDirect3DCubeTexture8* GetD3D8CubeTexture() {
-    return m_d3d8;
+    return m_d3d8.ptr();
   }
 
 private:
 
   IDirect3DDevice9* m_device = nullptr;
 
-  d3d8::IDirect3DCubeTexture8* m_d3d8 = nullptr;
+  ComObject<d3d8::IDirect3DCubeTexture8> m_d3d8;
+
+};
+
+class D3D9Texture3D : public ComObjectClamp<IDirect3DVolumeTexture9> {
+
+public:
+
+  D3D9Texture3D(IDirect3DDevice9* device, d3d8::IDirect3DVolumeTexture8* d3d8VolumeTexture);
+
+  ~D3D9Texture3D();
+
+  HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
+
+  D3DRESOURCETYPE STDMETHODCALLTYPE GetType();
+
+  HRESULT STDMETHODCALLTYPE GetLevelDesc(UINT Level, D3DVOLUME_DESC *pDesc);
+
+  HRESULT STDMETHODCALLTYPE GetVolumeLevel(UINT Level, IDirect3DVolume9** ppSurfaceLevel);
+
+  HRESULT STDMETHODCALLTYPE LockBox(UINT Level, D3DLOCKED_BOX* pLockedBox, CONST D3DBOX* pBox, DWORD Flags);
+
+  HRESULT STDMETHODCALLTYPE UnlockBox(UINT Level);
+
+  HRESULT STDMETHODCALLTYPE AddDirtyBox(CONST D3DBOX* pDirtyBox);
+
+  DWORD STDMETHODCALLTYPE SetLOD(DWORD LODNew) final {
+    Logger::warn("D3D9Texture3D::SetLOD: Stub!");
+    return 0;
+  }
+
+  DWORD STDMETHODCALLTYPE GetLOD() final {
+    Logger::warn("D3D9Texture3D::GetLOD: Stub!");
+    return 0;
+  }
+
+  DWORD STDMETHODCALLTYPE GetLevelCount() final {
+    Logger::info("D3D9Texture3D::GetLevelCount:");
+    return m_d3d8->GetLevelCount();
+  }
+
+  HRESULT STDMETHODCALLTYPE SetAutoGenFilterType(D3DTEXTUREFILTERTYPE FilterType) final {
+    Logger::warn("D3D9Texture3D::SetAutoGenFilterType: Stub!");
+    return D3D_OK;
+  }
+
+  D3DTEXTUREFILTERTYPE STDMETHODCALLTYPE GetAutoGenFilterType() final {
+    Logger::warn("D3D9Texture3D::GetAutoGenFilterType: Stub!");
+    return D3DTEXTUREFILTERTYPE(0);
+  }
+
+  void STDMETHODCALLTYPE GenerateMipSubLevels() final {
+    Logger::warn("D3D9Texture3D::GenerateMipSubLevels: Stub!");
+  }
+
+  HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) {
+    Logger::info("D3D9Texture3D::GetDevice:");
+
+    if (ppDevice == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    *ppDevice = m_device;
+
+    return D3D_OK;
+  }
+
+  void STDMETHODCALLTYPE PreLoad() {
+    Logger::warn("D3D9Texture3D::PreLoad: Stub!");
+  }
+
+  HRESULT STDMETHODCALLTYPE SetPrivateData(
+          REFGUID     refguid,
+    const void*       pData,
+          DWORD       SizeOfData,
+          DWORD       Flags) final {
+    Logger::warn("D3D9Texture3D::SetPrivateData: Stub!");
+    return D3D_OK;
+  }
+
+  HRESULT STDMETHODCALLTYPE GetPrivateData(
+          REFGUID     refguid,
+          void*       pData,
+          DWORD*      pSizeOfData) final {
+    Logger::warn("D3D9Texture3D::GetPrivateData: Stub!");
+    return D3D_OK;
+  }
+
+  HRESULT STDMETHODCALLTYPE FreePrivateData(REFGUID refguid) final {
+    Logger::warn("D3D9Texture3D::FreePrivateData: Stub!");
+    return D3D_OK;
+  }
+
+  DWORD STDMETHODCALLTYPE SetPriority(DWORD PriorityNew) {
+    Logger::warn("D3D9Texture3D::SetPriority: Stub!");
+    return 0;
+  }
+
+  DWORD STDMETHODCALLTYPE GetPriority() {
+    Logger::warn("D3D9Texture3D::GetPriority: Stub!");
+    return 0;
+  }
+
+  d3d8::IDirect3DVolumeTexture8* GetD3D8VolumeTexture() {
+    return m_d3d8.ptr();
+  }
+
+private:
+
+  IDirect3DDevice9* m_device = nullptr;
+
+  ComObject<d3d8::IDirect3DVolumeTexture8> m_d3d8;
 
 };

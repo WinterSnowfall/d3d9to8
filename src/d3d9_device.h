@@ -445,18 +445,18 @@ public:
   HRESULT STDMETHODCALLTYPE CreateQuery(D3DQUERYTYPE Type, IDirect3DQuery9** ppQuery);
 
   d3d8::IDirect3DDevice8* GetD3D8Device() {
-    return m_d3d8;
+    return m_d3d8.ptr();
   }
 
 private:
 
-  UINT                    m_baseVertexIndex = 0;
+  UINT                              m_baseVertexIndex = 0;
 
-  d3d8::IDirect3DDevice8* m_d3d8 = nullptr;
+  ComObject<d3d8::IDirect3DDevice8> m_d3d8;
 
-  IDirect3DSurface9*      m_rt   = nullptr;
-  IDirect3DSurface9*      m_ds   = nullptr;
+  ComObject<IDirect3DSurface9>      m_rt;
+  ComObject<IDirect3DSurface9>      m_ds;
 
-  std::array<IDirect3DBaseTexture9*, 8> m_textures;
+  std::array<ComObject<IDirect3DBaseTexture9>, 8> m_textures;
 
 };

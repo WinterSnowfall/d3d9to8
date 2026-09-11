@@ -38,7 +38,6 @@ D3D9Interface::D3D9Interface(d3d8::IDirect3D8* d3d8Intf)
 }
 
 D3D9Interface::~D3D9Interface() {
-  m_d3d8->Release();
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Interface::QueryInterface(REFIID riid, void** ppvObject) {
@@ -55,8 +54,11 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::QueryInterface(REFIID riid, void** ppvO
     return S_OK;
   }
 
+  if (riid == __uuidof(IDirect3D9Ex))
+    return E_NOINTERFACE;
+
   Logger::warn("D3D9Interface::QueryInterface: Unknown interface query");
-  //Logger::warn(riid);
+  Logger::warn(riid);
   return E_NOINTERFACE;
 }
 

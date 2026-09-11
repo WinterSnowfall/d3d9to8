@@ -27,7 +27,7 @@ HRESULT STDMETHODCALLTYPE D3D9StateBlock::QueryInterface(
   }
 
   Logger::warn("D3D9StateBlock::QueryInterface: Unknown interface query");
-  //Logger::warn(str::format(riid));
+  Logger::warn(riid);
   return E_NOINTERFACE;
 }
 

@@ -15,7 +15,10 @@ using Logger = ThreadSafeLogger;
 
 D3D9Device::D3D9Device(d3d8::IDirect3DDevice8* d3d8Device)
   : m_d3d8             ( d3d8Device ) {
-  m_textures.fill(nullptr);
+  // D3D8 will set this to 0.0f by default
+  if (m_d3d8 != nullptr) {
+    m_d3d8->SetRenderState(d3d8::D3DRS_POINTSIZE_MIN, bitcast<DWORD>(1.0f));
+  }
 }
 
 D3D9Device::~D3D9Device() {
@@ -35,8 +38,11 @@ HRESULT STDMETHODCALLTYPE D3D9Device::QueryInterface(REFIID riid, void** ppvObje
     return S_OK;
   }
 
+  if (riid == __uuidof(IDirect3DDevice9Ex))
+    return E_NOINTERFACE;
+
   Logger::warn("D3D9Device::QueryInterface: Unknown interface query");
-  //Logger::warn(str::format(riid));
+  Logger::warn(riid);
   return E_NOINTERFACE;
 }
 
@@ -148,13 +154,19 @@ UINT STDMETHODCALLTYPE D3D9Device::GetNumberOfSwapChains() {
 HRESULT STDMETHODCALLTYPE D3D9Device::Reset(D3DPRESENT_PARAMETERS* pPresentationParameters) {
   Logger::info("D3D9Device::Reset:");
 
+  // The D3D9 device will track losable resources, so release any cached objects
+  m_rt = nullptr;
+  m_ds = nullptr;
+  for (auto& texture : m_textures)
+    texture = nullptr;
+
   d3d8::D3DPRESENT_PARAMETERS params8 = ConvertPresentParameters8(pPresentationParameters);
 
   HRESULT hr = m_d3d8->Reset(&params8);
-  if (FAILED(hr))
+  if (FAILED(hr)) {
+    Logger::warn("D3D9Device::Reset: Failed to reset the D3D8 device");
     return hr;
-
-  m_textures.fill(nullptr);
+  }
 
   return D3D_OK;
 }
@@ -251,6 +263,22 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVolumeTexture(
         IDirect3DVolumeTexture9** ppVolumeTexture,
         HANDLE*                   pSharedHandle) {
   Logger::warn("D3D9Device::CreateVolumeTexture: Stub!");
+
+  if (ppVolumeTexture == nullptr)
+    return D3DERR_INVALIDCALL;
+
+  d3d8::IDirect3DVolumeTexture8* d3d8VolumeTexture;
+  HRESULT hr = m_d3d8->CreateVolumeTexture(Width, Height, Depth, Levels, Usage,
+                                           d3d8::D3DFORMAT(Format), d3d8::D3DPOOL(Pool),
+                                           &d3d8VolumeTexture);
+  if (FAILED(hr)) {
+    Logger::warn("D3D9Device::CreateVolumeTexture: Failed to create D3D8 volume texture");
+    return hr;
+  }
+
+  D3D9Texture3D* d3d9VolumeTexture = new D3D9Texture3D(this, d3d8VolumeTexture);
+  *ppVolumeTexture = d3d9VolumeTexture->IncrementRef();
+
   return D3D_OK;
 }
 
@@ -415,6 +443,11 @@ HRESULT STDMETHODCALLTYPE D3D9Device::UpdateTexture(
         sourceTexture8 = sourceCubeTexture9->GetD3D8CubeTexture();
         break;
       }
+      case D3DRTYPE_VOLUMETEXTURE: {
+        D3D9Texture3D* sourceVolumeTexture9 = reinterpret_cast<D3D9Texture3D*>(pSourceTexture);
+        sourceTexture8 = sourceVolumeTexture9->GetD3D8VolumeTexture();
+        break;
+      }
     }
   }
 
@@ -430,6 +463,11 @@ HRESULT STDMETHODCALLTYPE D3D9Device::UpdateTexture(
       case D3DRTYPE_CUBETEXTURE: {
         D3D9TextureCube* destinationCubeTexture9 = reinterpret_cast<D3D9TextureCube*>(pDestinationTexture);
         destinationTexture8 = destinationCubeTexture9->GetD3D8CubeTexture();
+        break;
+      }
+      case D3DRTYPE_VOLUMETEXTURE: {
+        D3D9Texture3D* destinationVolumeTexture9 = reinterpret_cast<D3D9Texture3D*>(pDestinationTexture);
+        destinationTexture8 = destinationVolumeTexture9->GetD3D8VolumeTexture();
         break;
       }
     }
@@ -503,9 +541,6 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetRenderTarget(
         IDirect3DSurface9* pRenderTarget) {
   Logger::info("D3D9Device::SetRenderTarget:");
 
-  if (m_rt != nullptr && m_rt == pRenderTarget)
-    return D3D_OK;
-
   D3D9Surface* d3d9RenderTarget = reinterpret_cast<D3D9Surface*>(pRenderTarget);
 
   HRESULT hr = m_d3d8->SetRenderTarget(d3d9RenderTarget != nullptr ? d3d9RenderTarget->GetD3D8Surface() : nullptr, nullptr);
@@ -526,7 +561,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetRenderTarget(
     return D3DERR_INVALIDCALL;
 
   if (m_rt != nullptr) {
-    *ppRenderTarget = m_rt;
+    *ppRenderTarget = m_rt.ref();
     return D3D_OK;
   }
 
@@ -541,24 +576,21 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetRenderTarget(
   return D3D_OK;
 }
 
-
 HRESULT STDMETHODCALLTYPE D3D9Device::SetDepthStencilSurface(IDirect3DSurface9* pNewZStencil) {
   Logger::info("D3D9Device::SetDepthStencilSurface:");
 
   D3D9Surface* d3d9DepthStencil = reinterpret_cast<D3D9Surface*>(pNewZStencil);
 
-  if (m_ds != nullptr && m_ds == pNewZStencil)
-    return D3D_OK;
-
   HRESULT hr = m_d3d8->SetRenderTarget(nullptr, d3d9DepthStencil != nullptr ? d3d9DepthStencil->GetD3D8Surface() : nullptr);
-  if (FAILED(hr))
+  if (FAILED(hr)) {
+    Logger::warn("D3D9Device::SetDepthStencilSurface: Failed to set D3D8 depth stencil");
     return hr;
+  }
 
   m_ds = pNewZStencil;
 
   return D3D_OK;
 }
-
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetDepthStencilSurface(IDirect3DSurface9** ppZStencilSurface) {
   Logger::info("D3D9Device::GetDepthStencilSurface:");
@@ -567,7 +599,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetDepthStencilSurface(IDirect3DSurface9**
     return D3DERR_INVALIDCALL;
 
   if (m_ds != nullptr) {
-    *ppZStencilSurface = m_ds;
+    *ppZStencilSurface = m_ds.ref();
     return D3D_OK;
   }
 
@@ -736,7 +768,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetTexture(DWORD Stage, IDirect3DBaseTextu
     return D3DERR_INVALIDCALL;
 
   if (m_textures[Stage] != nullptr) {
-    *ppTexture = m_textures[Stage];
+    *ppTexture = m_textures[Stage].ref();
     return D3D_OK;
   }
 
@@ -759,6 +791,11 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetTexture(DWORD Stage, IDirect3DBaseTextu
         *ppTexture = cubeTexture9->IncrementRef();
         break;
       }
+      case D3DRTYPE_VOLUMETEXTURE: {
+        D3D9Texture3D* volumeTexture9 = new D3D9Texture3D(this, reinterpret_cast<d3d8::IDirect3DVolumeTexture8*>(texture8));
+        *ppTexture = volumeTexture9->IncrementRef();
+        break;
+      }
       default:
         return D3DERR_INVALIDCALL;
     }
@@ -771,9 +808,6 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetTexture(DWORD Stage, IDirect3DBaseTextu
 
 HRESULT STDMETHODCALLTYPE D3D9Device::SetTexture(DWORD Stage, IDirect3DBaseTexture9* pTexture) {
   Logger::info("D3D9Device::SetTexture:");
-
-  if (m_textures[Stage] != nullptr && m_textures[Stage] == pTexture)
-    return D3D_OK;
 
   if (pTexture != nullptr) {
     const D3DRESOURCETYPE textureType = pTexture->GetType();
@@ -792,6 +826,15 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetTexture(DWORD Stage, IDirect3DBaseTextu
         D3D9TextureCube* textureCube9 = reinterpret_cast<D3D9TextureCube*>(pTexture);
 
         HRESULT hr = m_d3d8->SetTexture(Stage, textureCube9->GetD3D8CubeTexture());
+        if (FAILED(hr))
+          return hr;
+
+        break;
+      }
+      case D3DRTYPE_VOLUMETEXTURE: {
+        D3D9Texture3D* textureVolume9 = reinterpret_cast<D3D9Texture3D*>(pTexture);
+
+        HRESULT hr = m_d3d8->SetTexture(Stage, textureVolume9->GetD3D8VolumeTexture());
         if (FAILED(hr))
           return hr;
 
@@ -834,6 +877,13 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetSamplerState(
 
   const d3d8::D3DTEXTURESTAGESTATETYPE d3d8Type = GetTextureStateType8(Type);
 
+  // D3DSAMP_SRGBTEXTURE (11), D3DSAMP_ELEMENTINDEX (12) and D3DSAMP_DMAPOFFSET (13) don't exist in D3D8
+  if (d3d8Type == d3d8::D3DTEXTURESTAGESTATETYPE(-1)) {
+    Logger::debug("D3D9Device::GetSamplerState: Unsupported sampler state type: " + std::to_string(Type));
+    *pValue = 0;
+    return D3D_OK;
+  }
+
   return m_d3d8->GetTextureStageState(Sampler, d3d8Type, pValue);
 }
 
@@ -844,6 +894,13 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetSamplerState(
   Logger::info("D3D9Device::SetSamplerState:");
 
   const d3d8::D3DTEXTURESTAGESTATETYPE d3d8Type = GetTextureStateType8(Type);
+
+  // D3DSAMP_SRGBTEXTURE (11), D3DSAMP_ELEMENTINDEX (12) and D3DSAMP_DMAPOFFSET (13) don't exist in D3D8
+  if (d3d8Type == d3d8::D3DTEXTURESTAGESTATETYPE(-1)) {
+    if (Value != 0)
+      Logger::warn("D3D9Device::SetSamplerState: Unsupported sampler state type: " + std::to_string(Type));
+    return D3D_OK;
+  }
 
   return m_d3d8->SetTextureStageState(Sampler, d3d8Type, Value);
 }

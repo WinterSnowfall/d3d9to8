@@ -21,7 +21,7 @@ HRESULT STDMETHODCALLTYPE D3D9SwapChain::QueryInterface(REFIID riid, void** ppvO
   }
 
   Logger::warn("D3D9SwapChainEx::QueryInterface: Unknown interface query");
-  //Logger::warn(str::format(riid));
+  Logger::warn(riid);
   return E_NOINTERFACE;
 }
 

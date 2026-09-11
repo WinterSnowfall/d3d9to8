@@ -1,5 +1,7 @@
 #pragma once
 
+#include "d3d9_include.h"
+
 #include <string>
 #include <mutex>
 #include <fstream>
@@ -18,6 +20,7 @@ public:
   static void debug(const std::string& message);
   static void info(const std::string& message);
   static void warn(const std::string& message);
+  static void warn(REFIID riid);
   static void err(const std::string& message);
 
 private:

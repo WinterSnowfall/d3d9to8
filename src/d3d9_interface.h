@@ -89,7 +89,7 @@ public:
 
 private:
 
-  d3d8::IDirect3D8* m_d3d8 = nullptr;
+  ComObject<d3d8::IDirect3D8> m_d3d8;
 
   UINT                                                    m_adapterCount = 0;
   std::vector<std::array<UINT, 2>>                        m_adapterModeCounts;

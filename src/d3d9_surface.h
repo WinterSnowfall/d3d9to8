@@ -83,13 +83,13 @@ public:
   }
 
   d3d8::IDirect3DSurface8* GetD3D8Surface() {
-    return m_d3d8;
+    return m_d3d8.ptr();
   }
 
 private:
 
   IDirect3DDevice9* m_device = nullptr;
 
-  d3d8::IDirect3DSurface8* m_d3d8 = nullptr;
+  ComObject<d3d8::IDirect3DSurface8> m_d3d8;
 
 };

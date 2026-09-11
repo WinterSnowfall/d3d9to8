@@ -136,3 +136,13 @@ inline d3d8::D3DTEXTURESTAGESTATETYPE GetTextureStateType8(const D3DSAMPLERSTATE
     default:                    return d3d8::D3DTEXTURESTAGESTATETYPE(-1u);
   }
 }
+
+template<typename T, typename J>
+T bitcast(const J& src) {
+  static_assert(sizeof(T) == sizeof(J));
+  static_assert(std::is_trivially_copyable<J>::value && std::is_trivial<T>::value);
+
+  T dst;
+  memcpy(&dst, &src, sizeof(T));
+  return dst;
+}

@@ -22,13 +22,12 @@ public:
 
     if (riid == __uuidof(IUnknown)
       || riid == __uuidof(IDirect3DVertexShader9)) {
-      //this->AddRef();
-      *ppvObject = this;
+      *ppvObject = this->IncrementRef();
       return S_OK;
     }
 
     Logger::warn("D3D9Shader::QueryInterface: Unknown interface query");
-    //Logger::warn(str::format(riid));
+    Logger::warn(riid);
     return E_NOINTERFACE;
   }
 
@@ -45,6 +44,10 @@ public:
 
   HRESULT STDMETHODCALLTYPE GetFunction(void* pOut, UINT* pSizeOfData) {
     Logger::warn("D3D9VertexShader::GetFunction: Stub!");
+
+    if (pSizeOfData != nullptr)
+      *pSizeOfData = 0;
+
     return D3D_OK;
   }
 
@@ -76,13 +79,12 @@ public:
 
     if (riid == __uuidof(IUnknown)
       || riid == __uuidof(IDirect3DPixelShader9)) {
-      //this->AddRef();
-      *ppvObject = this;
+      *ppvObject = this->IncrementRef();
       return S_OK;
     }
 
     Logger::warn("D3D9Shader::QueryInterface: Unknown interface query");
-    //Logger::warn(str::format(riid));
+    Logger::warn(riid);
     return E_NOINTERFACE;
   }
 
@@ -99,6 +101,10 @@ public:
 
   HRESULT STDMETHODCALLTYPE GetFunction(void* pOut, UINT* pSizeOfData) {
     Logger::warn("D3D9PixelShader::GetFunction: Stub!");
+
+    if (pSizeOfData != nullptr)
+      *pSizeOfData = 0;
+
     return D3D_OK;
   }
 

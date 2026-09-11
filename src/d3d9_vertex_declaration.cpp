@@ -21,7 +21,7 @@ HRESULT STDMETHODCALLTYPE D3D9VertexDecl::QueryInterface(
   }
 
   Logger::warn("D3D9VertexDecl::QueryInterface: Unknown interface query");
-  //Logger::warn(str::format(riid));
+  Logger::warn(riid);
   return E_NOINTERFACE;
 }
 

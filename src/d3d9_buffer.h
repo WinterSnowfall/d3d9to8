@@ -72,12 +72,12 @@ public:
   }
 
   d3d8::IDirect3DIndexBuffer8* GetD3D8IndexBuffer() {
-    return m_d3d8;
+    return m_d3d8.ptr();
   }
 
 private:
 
-  d3d8::IDirect3DIndexBuffer8* m_d3d8 = nullptr;
+  ComObject<d3d8::IDirect3DIndexBuffer8> m_d3d8;
 
 };
 
@@ -147,11 +147,11 @@ public:
   }
 
   d3d8::IDirect3DVertexBuffer8* GetD3D8VertexBuffer() {
-    return m_d3d8;
+    return m_d3d8.ptr();
   }
 
 private:
 
-  d3d8::IDirect3DVertexBuffer8* m_d3d8 = nullptr;
+  ComObject<d3d8::IDirect3DVertexBuffer8> m_d3d8;
 
 };

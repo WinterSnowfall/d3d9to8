@@ -61,6 +61,14 @@ void ThreadSafeLogger::warn(const std::string& message) {
   logWithLevel(LogLevel::LOG_WARN, "WARN", message);
 }
 
+void ThreadSafeLogger::warn(REFIID riid) {
+  wchar_t guidString[39];
+  StringFromGUID2(riid, guidString, 39);
+  char buffer[39];
+  wcstombs(buffer, guidString, 39);
+  ThreadSafeLogger::warn(std::string(buffer));
+}
+
 void ThreadSafeLogger::err(const std::string& message) {
   logWithLevel(LogLevel::LOG_ERROR, "ERROR", message);
 }

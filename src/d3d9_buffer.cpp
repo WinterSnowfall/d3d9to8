@@ -23,7 +23,7 @@ HRESULT STDMETHODCALLTYPE D3D9IndexBuffer::QueryInterface(
   }
 
   Logger::warn("D3D9IndexBuffer::QueryInterface: Unknown interface query");
-  //Logger::warn(str::format(riid));
+  Logger::warn(riid);
   return E_NOINTERFACE;
 }
 
@@ -74,7 +74,7 @@ HRESULT STDMETHODCALLTYPE D3D9VertexBuffer::QueryInterface(
   }
 
   Logger::warn("D3D9VertexBuffer::QueryInterface: Unknown interface query");
-  //Logger::warn(str::format(riid));
+  Logger::warn(riid);
   return E_NOINTERFACE;
 }
 
