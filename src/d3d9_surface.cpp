@@ -19,8 +19,7 @@ HRESULT STDMETHODCALLTYPE D3D9Surface::QueryInterface(REFIID riid, void** ppvObj
   if (riid == __uuidof(IUnknown)
     || riid == __uuidof(IDirect3DResource9)
     || riid == __uuidof(IDirect3DSurface9)) {
-    //this->AddRef();
-    *ppvObject = this;
+    *ppvObject = this->IncrementRef();
     return S_OK;
   }
 

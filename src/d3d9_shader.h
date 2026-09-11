@@ -1,11 +1,12 @@
 #pragma once
 
 #include "d3d9_include.h"
+#include "d3d9_com_object.h"
 #include "d3d9_logger.h"
 
 using Logger = ThreadSafeLogger;
 
-class D3D9VertexShader final : public IDirect3DVertexShader9 {
+class D3D9VertexShader final : public ComObjectClamp<IDirect3DVertexShader9> {
 
 public:
 
@@ -31,16 +32,8 @@ public:
     return E_NOINTERFACE;
   }
 
-  ULONG STDMETHODCALLTYPE AddRef() {
-    return 1;
-  }
-
-  ULONG STDMETHODCALLTYPE Release() {
-    return 0;
-  }
-
   HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) {
-    Logger::warn("D3D9VertexShader::GetDevice: Stub!");
+    Logger::info("D3D9VertexShader::GetDevice:");
 
     if (ppDevice == nullptr)
       return D3DERR_INVALIDCALL;
@@ -67,7 +60,7 @@ private:
 
 };
 
-class D3D9PixelShader final : public IDirect3DPixelShader9 {
+class D3D9PixelShader final : public ComObjectClamp<IDirect3DPixelShader9> {
 
 public:
 
@@ -91,14 +84,6 @@ public:
     Logger::warn("D3D9Shader::QueryInterface: Unknown interface query");
     //Logger::warn(str::format(riid));
     return E_NOINTERFACE;
-  }
-
-  ULONG STDMETHODCALLTYPE AddRef() {
-    return 1;
-  }
-
-  ULONG STDMETHODCALLTYPE Release() {
-    return 0;
   }
 
   HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) {

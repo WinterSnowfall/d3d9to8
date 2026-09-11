@@ -51,8 +51,7 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::QueryInterface(REFIID riid, void** ppvO
 
   if (riid == __uuidof(IUnknown)
     || riid == __uuidof(IDirect3D9)) {
-    //this->AddRef();
-    *ppvObject = this;
+    *ppvObject = this->IncrementRef();
     return S_OK;
   }
 
@@ -191,8 +190,8 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CheckDeviceFormatConversion(
         D3DDEVTYPE DeviceType,
         D3DFORMAT  SourceFormat,
         D3DFORMAT  TargetFormat) {
-  Logger::warn("D3D9Interface::CheckDeviceFormatConversion: Stub!");
-  return D3D_OK;
+  Logger::err("D3D9Interface::CheckDeviceFormatConversion: Unsuppoerted Call!");
+  return D3DERR_NOTAVAILABLE;
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Interface::GetDeviceCaps(
@@ -242,7 +241,8 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CreateDevice(
     return hr;
   }
 
-  *ppReturnedDeviceInterface = new D3D9Device(d3d8Device);
+  D3D9Device* d3d9Device = new D3D9Device(d3d8Device);
+  *ppReturnedDeviceInterface = d3d9Device->IncrementRef();
 
   return D3D_OK;
 }

@@ -1,11 +1,12 @@
 #pragma once
 
 #include "d3d9_include.h"
+#include "d3d9_com_object.h"
 #include "d3d9_logger.h"
 
 using Logger = ThreadSafeLogger;
 
-class D3D9SwapChain final : public IDirect3DSwapChain9 {
+class D3D9SwapChain final : public ComObjectClamp<IDirect3DSwapChain9> {
 
 public:
 
@@ -14,14 +15,6 @@ public:
   ~D3D9SwapChain();
 
   HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
-
-  ULONG STDMETHODCALLTYPE AddRef() {
-    return 1;
-  }
-
-  ULONG STDMETHODCALLTYPE Release() {
-    return 0;
-  }
 
   HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) {
     Logger::info("D3D9SwapChain::GetDevice:");

@@ -18,8 +18,7 @@ HRESULT STDMETHODCALLTYPE D3D9IndexBuffer::QueryInterface(
   if (riid == __uuidof(IUnknown)
     || riid == __uuidof(IDirect3DResource9)
     || riid == __uuidof(IDirect3DIndexBuffer9)) {
-    //this->AddRef();
-    *ppvObject = this;
+    *ppvObject = this->IncrementRef();
     return S_OK;
   }
 
@@ -70,8 +69,7 @@ HRESULT STDMETHODCALLTYPE D3D9VertexBuffer::QueryInterface(
   if (riid == __uuidof(IUnknown)
     || riid == __uuidof(IDirect3DResource9)
     || riid == __uuidof(IDirect3DVertexBuffer9)) {
-    //this->AddRef();
-    *ppvObject = this;
+    *ppvObject = this->IncrementRef();
     return S_OK;
   }
 

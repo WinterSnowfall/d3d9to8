@@ -57,9 +57,8 @@ extern "C" {
       return nullptr;
     }
 
-    IDirect3D9* pDirect3D = new D3D9Interface(d3d8Intf);
-    //pDirect3D->AddRef();
-    return pDirect3D;
+    D3D9Interface* d3d9Intf = new D3D9Interface(d3d8Intf);
+    return d3d9Intf->IncrementRef();
   }
 
   DLLEXPORT HRESULT __stdcall Direct3DCreate9Ex(UINT nSDKVersion, IDirect3D9Ex** ppDirect3D9Ex) {
@@ -118,8 +117,7 @@ extern "C" {
     Logger::info("Direct3DShaderValidatorCreate9::");
 
     D3D9ShaderValidator* shaderValidator = new D3D9ShaderValidator();
-
-    return shaderValidator;
+    return shaderValidator->IncrementRef();
   }
 
   DLLEXPORT int __stdcall Direct3D9EnableMaximizedWindowedModeShim(UINT a) {

@@ -1,11 +1,12 @@
 #pragma once
 
 #include "d3d9_include.h"
+#include "d3d9_com_object.h"
 #include "d3d9_logger.h"
 
 #include <array>
 
-class D3D9Device final : public IDirect3DDevice9 {
+class D3D9Device final : public ComObjectClamp<IDirect3DDevice9> {
 
 public:
 
@@ -14,14 +15,6 @@ public:
   ~D3D9Device();
 
   HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
-
-  ULONG STDMETHODCALLTYPE AddRef() {
-    return 1;
-  }
-
-  ULONG STDMETHODCALLTYPE Release() {
-    return 0;
-  }
 
   HRESULT STDMETHODCALLTYPE TestCooperativeLevel();
 

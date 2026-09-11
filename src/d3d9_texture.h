@@ -1,25 +1,18 @@
 #pragma once
 
 #include "d3d9_include.h"
+#include "d3d9_com_object.h"
 #include "d3d9_logger.h"
 
 using Logger = ThreadSafeLogger;
 
-class D3D9Texture2D : public IDirect3DTexture9 {
+class D3D9Texture2D : public ComObjectClamp<IDirect3DTexture9> {
 
 public:
 
   D3D9Texture2D(IDirect3DDevice9* device, d3d8::IDirect3DTexture8* d3d8Texture);
 
   ~D3D9Texture2D();
-
-  ULONG STDMETHODCALLTYPE AddRef() {
-    return 1;
-  }
-
-  ULONG STDMETHODCALLTYPE Release() {
-    return 0;
-  }
 
   HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
 
@@ -123,21 +116,13 @@ private:
 
 };
 
-class D3D9TextureCube : public IDirect3DCubeTexture9 {
+class D3D9TextureCube : public ComObjectClamp<IDirect3DCubeTexture9> {
 
 public:
 
   D3D9TextureCube(IDirect3DDevice9* device, d3d8::IDirect3DCubeTexture8* d3d8Texture);
 
   ~D3D9TextureCube();
-
-  ULONG STDMETHODCALLTYPE AddRef() {
-    return 1;
-  }
-
-  ULONG STDMETHODCALLTYPE Release() {
-    return 0;
-  }
 
   HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
 
@@ -237,7 +222,7 @@ public:
     return 0;
   }
 
-  d3d8::IDirect3DCubeTexture8* GetD3D8Texture() {
+  d3d8::IDirect3DCubeTexture8* GetD3D8CubeTexture() {
     return m_d3d8;
   }
 

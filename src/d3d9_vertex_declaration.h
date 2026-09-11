@@ -1,25 +1,18 @@
 #pragma once
 
 #include "d3d9_include.h"
+#include "d3d9_com_object.h"
 #include "d3d9_logger.h"
 
 using Logger = ThreadSafeLogger;
 
-class D3D9VertexDecl final : public IDirect3DVertexDeclaration9 {
+class D3D9VertexDecl final : public ComObjectClamp<IDirect3DVertexDeclaration9> {
 
 public:
 
   D3D9VertexDecl();
 
   ~D3D9VertexDecl();
-
-  ULONG STDMETHODCALLTYPE AddRef() {
-    return 1;
-  }
-
-  ULONG STDMETHODCALLTYPE Release() {
-    return 0;
-  }
 
   HRESULT STDMETHODCALLTYPE QueryInterface(
           REFIID  riid,

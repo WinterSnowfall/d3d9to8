@@ -21,8 +21,7 @@ HRESULT STDMETHODCALLTYPE D3D9Texture2D::QueryInterface(REFIID riid, void** ppvO
     || riid == __uuidof(IDirect3DResource9)
     || riid == __uuidof(IDirect3DBaseTexture9)
     || riid == __uuidof(IDirect3DTexture9)) {
-    //this->AddRef();
-    *ppvObject = this;
+    *ppvObject = this->IncrementRef();
     return S_OK;
   }
 
@@ -59,12 +58,13 @@ HRESULT STDMETHODCALLTYPE D3D9Texture2D::GetSurfaceLevel(UINT Level, IDirect3DSu
   if (ppSurfaceLevel == nullptr)
     return D3DERR_INVALIDCALL;
 
-  d3d8::IDirect3DSurface8* surfaceLevel;
-  HRESULT hr = m_d3d8->GetSurfaceLevel(Level, &surfaceLevel);
+  d3d8::IDirect3DSurface8* d3d8SurfaceLevel;
+  HRESULT hr = m_d3d8->GetSurfaceLevel(Level, &d3d8SurfaceLevel);
   if (FAILED(hr))
     return hr;
 
-  *ppSurfaceLevel = new D3D9Surface(m_device, surfaceLevel);
+  D3D9Surface* d3d9SurfaceLevel = new D3D9Surface(m_device, d3d8SurfaceLevel);
+  *ppSurfaceLevel = d3d9SurfaceLevel->IncrementRef();
 
   return D3D_OK;
 }
@@ -102,8 +102,7 @@ HRESULT STDMETHODCALLTYPE D3D9TextureCube::QueryInterface(REFIID riid, void** pp
     || riid == __uuidof(IDirect3DResource9)
     || riid == __uuidof(IDirect3DBaseTexture9)
     || riid == __uuidof(IDirect3DCubeTexture9)) {
-    //this->AddRef();
-    *ppvObject = this;
+    *ppvObject = this->IncrementRef();
     return S_OK;
   }
 
@@ -143,12 +142,13 @@ HRESULT STDMETHODCALLTYPE D3D9TextureCube::GetCubeMapSurface(
   if (ppSurfaceLevel == nullptr)
     return D3DERR_INVALIDCALL;
 
-  d3d8::IDirect3DSurface8* surfaceLevel;
-  HRESULT hr = m_d3d8->GetCubeMapSurface(d3d8::D3DCUBEMAP_FACES(Face), Level, &surfaceLevel);
+  d3d8::IDirect3DSurface8* d3d8SurfaceLevel;
+  HRESULT hr = m_d3d8->GetCubeMapSurface(d3d8::D3DCUBEMAP_FACES(Face), Level, &d3d8SurfaceLevel);
   if (FAILED(hr))
     return hr;
 
-  *ppSurfaceLevel = new D3D9Surface(m_device, surfaceLevel);
+  D3D9Surface* d3d9SurfaceLevel = new D3D9Surface(m_device, d3d8SurfaceLevel);
+  *ppSurfaceLevel = d3d9SurfaceLevel->IncrementRef();
 
   return D3D_OK;
 }

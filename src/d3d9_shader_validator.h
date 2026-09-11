@@ -1,6 +1,7 @@
 #pragma once
 
 #include "d3d9_include.h"
+#include "d3d9_com_object.h"
 
 enum class D3D9ShaderValidatorMessage : uint32_t {
   BeginOutOfOrder = 0xeb,
@@ -52,19 +53,11 @@ public:
 
 };
 
-class D3D9ShaderValidator final : public IDirect3DShaderValidator9 {
+class D3D9ShaderValidator final : public ComObjectClamp<IDirect3DShaderValidator9> {
 
 public:
 
   HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
-
-  ULONG STDMETHODCALLTYPE AddRef() {
-    return 1;
-  }
-
-  ULONG STDMETHODCALLTYPE Release() {
-    return 0;
-  }
 
   HRESULT STDMETHODCALLTYPE Begin(
       D3D9ShaderValidatorCallback pCallback,

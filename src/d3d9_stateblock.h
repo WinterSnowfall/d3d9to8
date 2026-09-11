@@ -1,13 +1,14 @@
 #pragma once
 
 #include "d3d9_include.h"
+#include "d3d9_com_object.h"
 #include "d3d9_logger.h"
 
 #include "d3d9_device.h"
 
 using Logger = ThreadSafeLogger;
 
-class D3D9StateBlock final : public IDirect3DStateBlock9 {
+class D3D9StateBlock final : public ComObjectClamp<IDirect3DStateBlock9> {
 
 public:
 
@@ -18,14 +19,6 @@ public:
   HRESULT STDMETHODCALLTYPE QueryInterface(
       REFIID  riid,
       void** ppvObject) final;
-
-  ULONG STDMETHODCALLTYPE AddRef() {
-    return 1;
-  }
-
-  ULONG STDMETHODCALLTYPE Release() {
-    return 0;
-  }
 
   HRESULT STDMETHODCALLTYPE Capture() final;
 

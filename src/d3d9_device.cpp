@@ -6,6 +6,7 @@
 #include "d3d9_swapchain.h"
 #include "d3d9_shader.h"
 #include "d3d9_texture.h"
+#include "d3d9_query.h"
 #include "d3d9_vertex_declaration.h"
 #include "d3d9_stateblock.h"
 #include "d3d9_util.h"
@@ -14,6 +15,7 @@ using Logger = ThreadSafeLogger;
 
 D3D9Device::D3D9Device(d3d8::IDirect3DDevice8* d3d8Device)
   : m_d3d8             ( d3d8Device ) {
+  m_textures.fill(nullptr);
 }
 
 D3D9Device::~D3D9Device() {
@@ -29,8 +31,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::QueryInterface(REFIID riid, void** ppvObje
 
   if (riid == __uuidof(IUnknown)
     || riid == __uuidof(IDirect3DDevice9)) {
-    //this->AddRef();
-    *ppvObject = this;
+    *ppvObject = this->IncrementRef();
     return S_OK;
   }
 
@@ -64,7 +65,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetDirect3D(IDirect3D9** ppD3D9) {
   if (FAILED(hr))
     return hr;
 
-  *ppD3D9 = new D3D9Interface(d3d8Intf);
+  D3D9Interface* d3d9Intf = new D3D9Interface(d3d8Intf);
+  *ppD3D9 = d3d9Intf->IncrementRef();
 
   return D3D_OK;
 }
@@ -133,7 +135,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetSwapChain(UINT iSwapChain, IDirect3DSwa
   if (iSwapChain == 0)
     Logger::warn("D3D9Device::GetSwapChain: Use of zero iSwapChain");
 
-  *pSwapChain = new D3D9SwapChain(this, nullptr);
+  D3D9SwapChain* d3d9SwapChain = new D3D9SwapChain(this, nullptr);
+  *pSwapChain = d3d9SwapChain->IncrementRef();
 
   return D3D_OK;
 }
@@ -147,7 +150,13 @@ HRESULT STDMETHODCALLTYPE D3D9Device::Reset(D3DPRESENT_PARAMETERS* pPresentation
 
   d3d8::D3DPRESENT_PARAMETERS params8 = ConvertPresentParameters8(pPresentationParameters);
 
-  return m_d3d8->Reset(&params8);
+  HRESULT hr = m_d3d8->Reset(&params8);
+  if (FAILED(hr))
+    return hr;
+
+  m_textures.fill(nullptr);
+
+  return D3D_OK;
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::Present(
@@ -175,7 +184,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetBackBuffer(
   if (FAILED(hr))
     return hr;
 
-  *ppBackBuffer = new D3D9Surface(this, d3d8BackBuffer);
+  D3D9Surface* d3d9BackBuffer = new D3D9Surface(this, d3d8BackBuffer);
+  *ppBackBuffer = d3d9BackBuffer->IncrementRef();
 
   return D3D_OK;
 }
@@ -224,7 +234,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateTexture(
     return hr;
   }
 
-  *ppTexture = new D3D9Texture2D(this, d3d8Texture);
+  D3D9Texture2D* d3d9Texture = new D3D9Texture2D(this, d3d8Texture);
+  *ppTexture = d3d9Texture->IncrementRef();
 
   return D3D_OK;
 }
@@ -265,7 +276,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateCubeTexture(
     return hr;
   }
 
-  *ppCubeTexture = new D3D9TextureCube(this, d3d8CubeTexture);
+  D3D9TextureCube* d3d9CubeTexture = new D3D9TextureCube(this, d3d8CubeTexture);
+  *ppCubeTexture = d3d9CubeTexture->IncrementRef();
 
   return D3D_OK;
 }
@@ -291,7 +303,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVertexBuffer(
     return hr;
   }
 
-  *ppVertexBuffer = new D3D9VertexBuffer(d3d8VertexBuffer);
+  D3D9VertexBuffer* d3d9VertexBuffer = new D3D9VertexBuffer(d3d8VertexBuffer);
+  *ppVertexBuffer = d3d9VertexBuffer->IncrementRef();
 
   return D3D_OK;
 }
@@ -317,7 +330,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateIndexBuffer(
     return hr;
   }
 
-  *ppIndexBuffer = new D3D9IndexBuffer(d3d8IndexBuffer);
+  D3D9IndexBuffer* d3d9IndexBuffer = new D3D9IndexBuffer(d3d8IndexBuffer);
+  *ppIndexBuffer = d3d9IndexBuffer->IncrementRef();
 
   return D3D_OK;
 }
@@ -359,7 +373,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateDepthStencilSurface(
     return hr;
   }
 
-  *ppSurface = new D3D9Surface(this, d3d8DepthStencil);
+  D3D9Surface* d3d9DepthStencil = new D3D9Surface(this, d3d8DepthStencil);
+  *ppSurface = d3d9DepthStencil->IncrementRef();
 
   return D3D_OK;
 }
@@ -383,10 +398,44 @@ HRESULT STDMETHODCALLTYPE D3D9Device::UpdateTexture(
         IDirect3DBaseTexture9* pDestinationTexture) {
   Logger::info("D3D9Device::UpdateTexture:");
 
-  D3D9Texture2D* sourceTexture9 = reinterpret_cast<D3D9Texture2D*>(pSourceTexture);
-  D3D9Texture2D* destinationTexture9 = reinterpret_cast<D3D9Texture2D*>(pDestinationTexture);
+  d3d8::IDirect3DBaseTexture8* sourceTexture8 = nullptr;
+  d3d8::IDirect3DBaseTexture8* destinationTexture8 = nullptr;
 
-  return m_d3d8->UpdateTexture(sourceTexture9->GetD3D8Texture(), destinationTexture9->GetD3D8Texture());
+  if (pSourceTexture != nullptr) {
+    const D3DRESOURCETYPE sourceTextureType = pSourceTexture->GetType();
+    switch (sourceTextureType) {
+      default:
+      case D3DRTYPE_TEXTURE: {
+        D3D9Texture2D* sourceTexture9 = reinterpret_cast<D3D9Texture2D*>(pSourceTexture);
+        sourceTexture8 = sourceTexture9->GetD3D8Texture();
+        break;
+      }
+      case D3DRTYPE_CUBETEXTURE: {
+        D3D9TextureCube* sourceCubeTexture9 = reinterpret_cast<D3D9TextureCube*>(pSourceTexture);
+        sourceTexture8 = sourceCubeTexture9->GetD3D8CubeTexture();
+        break;
+      }
+    }
+  }
+
+  if (pDestinationTexture != nullptr) {
+    const D3DRESOURCETYPE destinationTextureType = pDestinationTexture->GetType();
+    switch (destinationTextureType) {
+      default:
+      case D3DRTYPE_TEXTURE: {
+        D3D9Texture2D* destinationTexture9 = reinterpret_cast<D3D9Texture2D*>(pDestinationTexture);
+        destinationTexture8 = destinationTexture9->GetD3D8Texture();
+        break;
+      }
+      case D3DRTYPE_CUBETEXTURE: {
+        D3D9TextureCube* destinationCubeTexture9 = reinterpret_cast<D3D9TextureCube*>(pDestinationTexture);
+        destinationTexture8 = destinationCubeTexture9->GetD3D8CubeTexture();
+        break;
+      }
+    }
+  }
+
+  return m_d3d8->UpdateTexture(sourceTexture8, destinationTexture8);
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetRenderTargetData(
@@ -399,6 +448,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetRenderTargetData(
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetFrontBufferData(UINT iSwapChain, IDirect3DSurface9* pDestSurface) {
   Logger::warn("D3D9Device::GetFrontBufferData: Stub!");
+  // TODO: GetFrontBuffer exists in D3D8, but it doesn't copy to pDestSurface
   return D3D_OK;
 }
 
@@ -409,7 +459,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::StretchRect(
   const RECT*                pDestRect,
         D3DTEXTUREFILTERTYPE Filter) {
   Logger::err("D3D9Device::StretchRect: Unsupported call!");
-  return D3D_OK;
+  return D3DERR_NOTAVAILABLE;
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::ColorFill(
@@ -442,7 +492,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateOffscreenPlainSurface(
     return hr;
   }
 
-  *ppSurface = new D3D9Surface(this, d3d8OffscreenSurface);
+  D3D9Surface* d3d9OffscreenSurface = new D3D9Surface(this, d3d8OffscreenSurface);
+  *ppSurface = d3d9OffscreenSurface->IncrementRef();
 
   return D3D_OK;
 }
@@ -484,7 +535,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetRenderTarget(
   if (FAILED(hr))
     return hr;
 
-  *ppRenderTarget = new D3D9Surface(this, d3d8RenderTarget);
+  D3D9Surface* d3d9RenderTarget = new D3D9Surface(this, d3d8RenderTarget);
+  *ppRenderTarget = d3d9RenderTarget->IncrementRef();
 
   return D3D_OK;
 }
@@ -524,7 +576,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetDepthStencilSurface(IDirect3DSurface9**
   if (FAILED(hr))
     return hr;
 
-  *ppZStencilSurface = new D3D9Surface(this, d3d8ZStencilSurface);
+  D3D9Surface* d3d9ZStencilSurface = new D3D9Surface(this, d3d8ZStencilSurface);
+  *ppZStencilSurface = d3d9ZStencilSurface->IncrementRef();
 
   return D3D_OK;
 }
@@ -581,8 +634,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetMaterial(const D3DMATERIAL9* pMaterial)
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetMaterial(D3DMATERIAL9* pMaterial) {
-  Logger::warn("D3D9Device::GetMaterial: Stub!");
-  return D3D_OK;
+  Logger::info("D3D9Device::GetMaterial:");
+  return m_d3d8->GetMaterial(reinterpret_cast<d3d8::D3DMATERIAL8*>(pMaterial));
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::SetLight(DWORD Index, const D3DLIGHT9* pLight) {
@@ -591,8 +644,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetLight(DWORD Index, const D3DLIGHT9* pLi
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetLight(DWORD Index, D3DLIGHT9* pLight) {
-  Logger::warn("D3D9Device::GetLight: Stub!");
-  return D3D_OK;
+  Logger::info("D3D9Device::GetLight:");
+  return m_d3d8->GetLight(Index, reinterpret_cast<d3d8::D3DLIGHT8*>(pLight));
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::LightEnable(DWORD Index, BOOL Enable) {
@@ -601,8 +654,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::LightEnable(DWORD Index, BOOL Enable) {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetLightEnable(DWORD Index, BOOL* pEnable) {
-  Logger::warn("D3D9Device::GetLightEnable: Stub!");
-  return D3D_OK;
+  Logger::info("D3D9Device::GetLightEnable:");
+  return m_d3d8->GetLightEnable(Index, pEnable);
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::SetClipPlane(DWORD Index, const float* pPlane) {
@@ -619,7 +672,6 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetRenderState(D3DRENDERSTATETYPE State, D
   Logger::info("D3D9Device::SetRenderState:");
   return m_d3d8->SetRenderState(d3d8::D3DRENDERSTATETYPE(State), Value);
 }
-
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetRenderState(D3DRENDERSTATETYPE State, DWORD* pValue) {
   Logger::info("D3D9Device::GetRenderState:");
@@ -639,7 +691,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateStateBlock(
   if (FAILED(hr))
     return hr;
 
-  *ppSB = new D3D9StateBlock(this, handle);
+  D3D9StateBlock* d3d9StateBlock = new D3D9StateBlock(this, handle);
+  *ppSB = d3d9StateBlock->IncrementRef();
 
   return D3D_OK;
 }
@@ -660,7 +713,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::EndStateBlock(IDirect3DStateBlock9** ppSB)
   if (FAILED(hr))
     return hr;
 
-  *ppSB = new D3D9StateBlock(this, handle);
+  D3D9StateBlock* d3d9StateBlock = new D3D9StateBlock(this, handle);
+  *ppSB = d3d9StateBlock->IncrementRef();
 
   return D3D_OK;
 }
@@ -678,6 +732,9 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetClipStatus(D3DCLIPSTATUS9* pClipStatus)
 HRESULT STDMETHODCALLTYPE D3D9Device::GetTexture(DWORD Stage, IDirect3DBaseTexture9** ppTexture) {
   Logger::info("D3D9Device::GetTexture:");
 
+  if (ppTexture == nullptr)
+    return D3DERR_INVALIDCALL;
+
   if (m_textures[Stage] != nullptr) {
     *ppTexture = m_textures[Stage];
     return D3D_OK;
@@ -688,7 +745,26 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetTexture(DWORD Stage, IDirect3DBaseTextu
   if (FAILED(hr))
     return hr;
 
-  *ppTexture = new D3D9Texture2D(this, reinterpret_cast<d3d8::IDirect3DTexture8*>(texture8));
+  if (texture8 != nullptr) {
+    const d3d8::D3DRESOURCETYPE textureType = texture8->GetType();
+
+    switch (textureType) {
+      case D3DRTYPE_TEXTURE: {
+        D3D9Texture2D* texture9 = new D3D9Texture2D(this, reinterpret_cast<d3d8::IDirect3DTexture8*>(texture8));
+        *ppTexture = texture9->IncrementRef();
+        break;
+      }
+      case D3DRTYPE_CUBETEXTURE: {
+        D3D9TextureCube* cubeTexture9 = new D3D9TextureCube(this, reinterpret_cast<d3d8::IDirect3DCubeTexture8*>(texture8));
+        *ppTexture = cubeTexture9->IncrementRef();
+        break;
+      }
+      default:
+        return D3DERR_INVALIDCALL;
+    }
+  } else {
+    *ppTexture = nullptr;
+  }
 
   return D3D_OK;
 }
@@ -699,11 +775,36 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetTexture(DWORD Stage, IDirect3DBaseTextu
   if (m_textures[Stage] != nullptr && m_textures[Stage] == pTexture)
     return D3D_OK;
 
-  D3D9Texture2D* texture9 = reinterpret_cast<D3D9Texture2D*>(pTexture);
+  if (pTexture != nullptr) {
+    const D3DRESOURCETYPE textureType = pTexture->GetType();
 
-  HRESULT hr = m_d3d8->SetTexture(Stage, texture9 != nullptr ? texture9->GetD3D8Texture() : nullptr);
-  if (FAILED(hr))
-    return hr;
+    switch (textureType) {
+      case D3DRTYPE_TEXTURE: {
+        D3D9Texture2D* texture9 = reinterpret_cast<D3D9Texture2D*>(pTexture);
+
+        HRESULT hr = m_d3d8->SetTexture(Stage, texture9->GetD3D8Texture());
+        if (FAILED(hr))
+          return hr;
+
+        break;
+      }
+      case D3DRTYPE_CUBETEXTURE: {
+        D3D9TextureCube* textureCube9 = reinterpret_cast<D3D9TextureCube*>(pTexture);
+
+        HRESULT hr = m_d3d8->SetTexture(Stage, textureCube9->GetD3D8CubeTexture());
+        if (FAILED(hr))
+          return hr;
+
+        break;
+      }
+      default:
+        return D3DERR_INVALIDCALL;
+    }
+  } else {
+    HRESULT hr = m_d3d8->SetTexture(Stage, nullptr);
+    if (FAILED(hr))
+      return hr;
+  }
 
   m_textures[Stage] = pTexture;
 
@@ -790,13 +891,17 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetScissorRect(RECT* pRect) {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::SetSoftwareVertexProcessing(BOOL bSoftware) {
-  Logger::warn("D3D9Device::SetSoftwareVertexProcessing: Stub!");
-  return D3D_OK;
+  Logger::info("D3D9Device::SetSoftwareVertexProcessing:");
+  return m_d3d8->SetRenderState(d3d8::D3DRS_SOFTWAREVERTEXPROCESSING, static_cast<DWORD>(bSoftware));
 }
 
 BOOL STDMETHODCALLTYPE D3D9Device::GetSoftwareVertexProcessing() {
-  Logger::warn("D3D9Device::GetSoftwareVertexProcessing: Stub!");
-  return D3D_OK;
+  Logger::info("D3D9Device::GetSoftwareVertexProcessing:");
+
+  DWORD swvpD3D8 = 0;
+  m_d3d8->GetRenderState(d3d8::D3DRS_SOFTWAREVERTEXPROCESSING, &swvpD3D8);
+
+  return static_cast<BOOL>(swvpD3D8);
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::SetNPatchMode(float nSegments) {
@@ -887,18 +992,21 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVertexDeclaration(
   if (ppDecl == nullptr)
     return D3DERR_INVALIDCALL;
 
-  *ppDecl = new D3D9VertexDecl();
+  D3D9VertexDecl* d3d9VertexDecl = new D3D9VertexDecl();
+  *ppDecl = d3d9VertexDecl->IncrementRef();
 
   return D3D_OK;
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexDeclaration(IDirect3DVertexDeclaration9* pDecl) {
   Logger::warn("D3D9Device::SetVertexDeclaration: Stub!");
+  // TODO: Use SetVertexShader along with the current existing VS?
   return D3D_OK;
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetVertexDeclaration(IDirect3DVertexDeclaration9** ppDecl) {
   Logger::warn("D3D9Device::GetVertexDeclaration: Stub!");
+  // TODO: Get it from the currently set VS
   return D3D_OK;
 }
 
@@ -935,7 +1043,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVertexShader(
   if (FAILED(hr))
     return hr;
 
-  *ppShader =  new D3D9VertexShader(this, handle);
+  D3D9VertexShader* d3d9VSShader = new D3D9VertexShader(this, handle);
+  *ppShader = d3d9VSShader->IncrementRef();
 
   return D3D_OK;
 }
@@ -965,23 +1074,23 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexShaderConstantF(
         UINT   StartRegister,
   const float* pConstantData,
         UINT   Vector4fCount) {
-  Logger::warn("D3D9Device::SetVertexShaderConstantF: Stub!");
-  return D3D_OK;
+  Logger::info("D3D9Device::SetVertexShaderConstantF:");
+  return m_d3d8->SetVertexShaderConstant(StartRegister, reinterpret_cast<const void*>(pConstantData), Vector4fCount);
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetVertexShaderConstantF(
         UINT   StartRegister,
         float* pConstantData,
         UINT   Vector4fCount) {
-  Logger::warn("D3D9Device::GetVertexShaderConstantF: Stub!");
-  return D3D_OK;
+  Logger::info("D3D9Device::GetVertexShaderConstantF:");
+  return m_d3d8->GetVertexShaderConstant(StartRegister, reinterpret_cast<void*>(pConstantData), Vector4fCount);
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexShaderConstantI(
         UINT StartRegister,
   const int* pConstantData,
         UINT Vector4iCount) {
-  Logger::warn("D3D9Device::SetVertexShaderConstantI: Stub!");
+  Logger::err("D3D9Device::SetVertexShaderConstantI: Unsupported call!");
   return D3D_OK;
 }
 
@@ -989,7 +1098,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetVertexShaderConstantI(
         UINT StartRegister,
         int* pConstantData,
         UINT Vector4iCount) {
-  Logger::warn("D3D9Device::GetVertexShaderConstantI: Stub!");
+  Logger::err("D3D9Device::GetVertexShaderConstantI: Unsupported call!");
   return D3D_OK;
 }
 
@@ -997,7 +1106,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexShaderConstantB(
         UINT  StartRegister,
   const BOOL* pConstantData,
         UINT  BoolCount) {
-  Logger::warn("D3D9Device::SetVertexShaderConstantB: Stub!");
+  Logger::err("D3D9Device::SetVertexShaderConstantB: Unsupported call!");
   return D3D_OK;
 }
 
@@ -1005,7 +1114,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetVertexShaderConstantB(
         UINT  StartRegister,
         BOOL* pConstantData,
         UINT  BoolCount) {
-  Logger::warn("D3D9Device::GetVertexShaderConstantB: Stub!");
+  Logger::warn("D3D9Device::GetVertexShaderConstantB: Unsupported call!");
   return D3D_OK;
 }
 
@@ -1030,6 +1139,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetStreamSource(
         UINT*                    pOffsetInBytes,
         UINT*                    pStride) {
   Logger::warn("D3D9Device::GetStreamSource: Stub!");
+
+  if (pOffsetInBytes != nullptr)
+    *pOffsetInBytes = 0;
+
   return D3D_OK;
 }
 
@@ -1084,7 +1197,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreatePixelShader(
   if (FAILED(hr))
     return hr;
 
-  *ppShader =  new D3D9PixelShader(this, handle);
+  D3D9PixelShader* d3d9PSShader = new D3D9PixelShader(this, handle);
+  *ppShader = d3d9PSShader->IncrementRef();
 
   return D3D_OK;
 }
@@ -1114,23 +1228,23 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetPixelShaderConstantF(
   UINT   StartRegister,
   const float* pConstantData,
   UINT   Vector4fCount) {
-  Logger::warn("D3D9Device::SetPixelShaderConstantF: Stub!");
-  return D3D_OK;
+  Logger::info("D3D9Device::SetPixelShaderConstantF:");
+  return m_d3d8->SetPixelShaderConstant(StartRegister, reinterpret_cast<const void*>(pConstantData), Vector4fCount);
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetPixelShaderConstantF(
   UINT   StartRegister,
   float* pConstantData,
   UINT   Vector4fCount) {
-  Logger::warn("D3D9Device::GetPixelShaderConstantF: Stub!");
-  return D3D_OK;
+  Logger::info("D3D9Device::GetPixelShaderConstantF:");
+  return m_d3d8->GetPixelShaderConstant(StartRegister, reinterpret_cast<void*>(pConstantData), Vector4fCount);
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::SetPixelShaderConstantI(
   UINT StartRegister,
   const int* pConstantData,
   UINT Vector4iCount) {
-  Logger::warn("D3D9Device::SetPixelShaderConstantI: Stub!");
+  Logger::err("D3D9Device::SetPixelShaderConstantI: Unsupported call!");
   return D3D_OK;
 }
 
@@ -1138,7 +1252,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetPixelShaderConstantI(
   UINT StartRegister,
   int* pConstantData,
   UINT Vector4iCount) {
-  Logger::warn("D3D9Device::GetPixelShaderConstantI: Stub!");
+  Logger::err("D3D9Device::GetPixelShaderConstantI: Unsupported call!");
   return D3D_OK;
 }
 
@@ -1146,7 +1260,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetPixelShaderConstantB(
   UINT  StartRegister,
   const BOOL* pConstantData,
   UINT  BoolCount) {
-  Logger::warn("D3D9Device::SetPixelShaderConstantB: Stub!");
+  Logger::err("D3D9Device::SetPixelShaderConstantB: Unsupported call!");
   return D3D_OK;
 }
 
@@ -1154,7 +1268,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetPixelShaderConstantB(
   UINT  StartRegister,
   BOOL* pConstantData,
   UINT  BoolCount) {
-  Logger::warn("D3D9Device::GetPixelShaderConstantB: Stub!");
+  Logger::err("D3D9Device::GetPixelShaderConstantB: Unsupported call!");
   return D3D_OK;
 }
 
@@ -1180,7 +1294,14 @@ HRESULT STDMETHODCALLTYPE D3D9Device::DeletePatch(UINT Handle) {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::CreateQuery(D3DQUERYTYPE Type, IDirect3DQuery9** ppQuery) {
-  Logger::warn("D3D9Device::CreateQuery: Stub!");
-  return D3DERR_NOTAVAILABLE;
+  Logger::info("D3D9Device::CreateQuery:");
+
+  if (ppQuery == nullptr)
+    return D3DERR_INVALIDCALL;
+
+  D3D9Query* d3d9Query = new D3D9Query(this, Type);
+  *ppQuery = d3d9Query->IncrementRef();
+
+  return D3D_OK;
 }
 

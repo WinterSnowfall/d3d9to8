@@ -1,27 +1,20 @@
 #pragma once
 
 #include "d3d9_include.h"
+#include "d3d9_com_object.h"
 #include "d3d9_logger.h"
 
 #include "d3d9_device.h"
 
 using Logger = ThreadSafeLogger;
 
-class D3D9Surface final : public IDirect3DSurface9 {
+class D3D9Surface final : public ComObjectClamp<IDirect3DSurface9> {
 
 public:
 
   D3D9Surface(IDirect3DDevice9* device, d3d8::IDirect3DSurface8* d3d8Surface);
 
   ~D3D9Surface();
-
-  ULONG STDMETHODCALLTYPE AddRef() {
-    return 1;
-  }
-
-  ULONG STDMETHODCALLTYPE Release() {
-    return 0;
-  }
 
   HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
 

@@ -6,6 +6,10 @@ D3D9StateBlock::D3D9StateBlock(IDirect3DDevice9* device, DWORD handle)
 }
 
 D3D9StateBlock::~D3D9StateBlock() {
+  if (m_device != nullptr) {
+    D3D9Device* d3d9Device = reinterpret_cast<D3D9Device*>(m_device);
+    d3d9Device->GetD3D8Device()->DeleteStateBlock(m_handle);
+  }
 }
 
 HRESULT STDMETHODCALLTYPE D3D9StateBlock::QueryInterface(
@@ -18,8 +22,7 @@ HRESULT STDMETHODCALLTYPE D3D9StateBlock::QueryInterface(
 
   if (riid == __uuidof(IUnknown)
     || riid == __uuidof(IDirect3DStateBlock9)) {
-    //this->AddRef();
-    *ppvObject = this;
+    *ppvObject = this->IncrementRef();
     return S_OK;
   }
 

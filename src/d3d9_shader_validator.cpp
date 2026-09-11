@@ -4,8 +4,7 @@ HRESULT STDMETHODCALLTYPE D3D9ShaderValidator::QueryInterface(REFIID riid, void*
   if (ppvObject == nullptr)
     return E_POINTER;
 
-  //this->AddRef();
-  *ppvObject = this;
+  *ppvObject = this->IncrementRef();
   return S_OK;
 }
 

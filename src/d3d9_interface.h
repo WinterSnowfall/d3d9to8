@@ -1,12 +1,13 @@
 #pragma once
 
 #include "d3d9_include.h"
+#include "d3d9_com_object.h"
 #include "d3d9_logger.h"
 
 #include <vector>
 #include <array>
 
-class D3D9Interface final : public IDirect3D9 {
+class D3D9Interface final : public ComObjectClamp<IDirect3D9> {
 
 public:
 
@@ -15,14 +16,6 @@ public:
   ~D3D9Interface();
 
   HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
-
-  ULONG STDMETHODCALLTYPE AddRef() {
-    return 1;
-  }
-
-  ULONG STDMETHODCALLTYPE Release() {
-    return 0;
-  }
 
   HRESULT STDMETHODCALLTYPE RegisterSoftwareDevice(void* pInitializeFunction);
 

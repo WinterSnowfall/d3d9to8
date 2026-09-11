@@ -1,25 +1,18 @@
 #pragma once
 
 #include "d3d9_include.h"
+#include "d3d9_com_object.h"
 #include "d3d9_logger.h"
 
 using Logger = ThreadSafeLogger;
 
-class D3D9IndexBuffer : public IDirect3DIndexBuffer9 {
+class D3D9IndexBuffer : public ComObjectClamp<IDirect3DIndexBuffer9> {
 
 public:
 
   D3D9IndexBuffer(d3d8::IDirect3DIndexBuffer8* d3d8IndexBuffer);
 
   ~D3D9IndexBuffer();
-
-  ULONG STDMETHODCALLTYPE AddRef() {
-    return 1;
-  }
-
-  ULONG STDMETHODCALLTYPE Release() {
-    return 0;
-  }
 
   HRESULT STDMETHODCALLTYPE QueryInterface(
     REFIID  riid,
@@ -88,21 +81,13 @@ private:
 
 };
 
-class D3D9VertexBuffer : public IDirect3DVertexBuffer9 {
+class D3D9VertexBuffer : public ComObjectClamp<IDirect3DVertexBuffer9> {
 
 public:
 
   D3D9VertexBuffer(d3d8::IDirect3DVertexBuffer8* d3d8VertexBuffer);
 
   ~D3D9VertexBuffer();
-
-  ULONG STDMETHODCALLTYPE AddRef() {
-    return 1;
-  }
-
-  ULONG STDMETHODCALLTYPE Release() {
-    return 0;
-  }
 
   HRESULT STDMETHODCALLTYPE QueryInterface(
     REFIID  riid,
