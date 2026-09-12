@@ -20,7 +20,7 @@ inline void ConvertCaps9(const d3d8::D3DCAPS8& caps8, D3DCAPS9* pCaps9) {
                                  | D3DCAPS3_COPY_TO_SYSTEMMEM;
 
   pCaps9->PrimitiveMiscCaps     |= D3DPMISCCAPS_INDEPENDENTWRITEMASKS
-                                 | D3DPMISCCAPS_PERSTAGECONSTANT
+                              // | D3DPMISCCAPS_PERSTAGECONSTANT // Doesn't actually exist in D3D8
                                  | D3DPMISCCAPS_FOGANDSPECULARALPHA
                                  | D3DPMISCCAPS_SEPARATEALPHABLEND
                                  | D3DPMISCCAPS_MRTINDEPENDENTBITDEPTHS
@@ -117,7 +117,7 @@ inline D3DSURFACE_DESC ConvertSurfaceDesc8(d3d8::D3DSURFACE_DESC* pSurf8) {
   return surfDesc9;
 }
 
-// If this D3DTEXTURESTAGESTATETYPE has been remapped to a d3d9::D3DSAMPLERSTATETYPE
+// If this D3DSAMPLERSTATETYPE has been remapped to a d3d8::D3DTEXTURESTAGESTATETYPE
 // it will be returned, otherwise returns -1u
 inline d3d8::D3DTEXTURESTAGESTATETYPE GetTextureStateType8(const D3DSAMPLERSTATETYPE SamplerType) {
   switch (SamplerType) {
@@ -137,8 +137,16 @@ inline d3d8::D3DTEXTURESTAGESTATETYPE GetTextureStateType8(const D3DSAMPLERSTATE
   }
 }
 
+// Some formats simply won't be supported in D3D8, although they
+// are expected to work just fine in D3D9 for various purposes
+inline bool IsUnsupportedD3D9Format(const D3DFORMAT format) {
+  return format == D3DFMT_A16B16G16R16
+      || format == D3DFMT_A16B16G16R16F; // Dawn of War: Definitive Edition requires it for cubemaps
+    //|| format == D3DFMT_A32B32G32R32F; // This isn't typically supported in D3D9 either actually
+}
+
 template<typename T, typename J>
-T bitcast(const J& src) {
+inline T bitcast(const J& src) {
   static_assert(sizeof(T) == sizeof(J));
   static_assert(std::is_trivially_copyable<J>::value && std::is_trivial<T>::value);
 

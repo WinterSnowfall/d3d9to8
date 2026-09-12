@@ -2,6 +2,9 @@
 
 #include "d3d9_include.h"
 #include "d3d9_com_object.h"
+#include "d3d9_logger.h"
+
+using Logger = ThreadSafeLogger;
 
 enum class D3D9ShaderValidatorMessage : uint32_t {
   BeginOutOfOrder = 0xeb,

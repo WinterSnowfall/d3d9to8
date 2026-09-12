@@ -1,7 +1,8 @@
 #include "d3d9_buffer.h"
 
-D3D9IndexBuffer::D3D9IndexBuffer(d3d8::IDirect3DIndexBuffer8* d3d8IndexBuffer)
-: m_d3d8 ( d3d8IndexBuffer ) {
+D3D9IndexBuffer::D3D9IndexBuffer(IDirect3DDevice9* device, d3d8::IDirect3DIndexBuffer8* d3d8IndexBuffer)
+  : D3D9Resource(device, reinterpret_cast<d3d8::IDirect3DResource8*>(d3d8IndexBuffer))
+  , m_d3d8 ( d3d8IndexBuffer ) {
 }
 
 D3D9IndexBuffer::~D3D9IndexBuffer() {
@@ -16,13 +17,13 @@ HRESULT STDMETHODCALLTYPE D3D9IndexBuffer::QueryInterface(
   *ppvObject = nullptr;
 
   if (riid == __uuidof(IUnknown)
-    || riid == __uuidof(IDirect3DResource9)
-    || riid == __uuidof(IDirect3DIndexBuffer9)) {
-    *ppvObject = this->IncrementRef();
+   || riid == __uuidof(IDirect3DResource9)
+   || riid == __uuidof(IDirect3DIndexBuffer9)) {
+    *ppvObject = ref(this);
     return S_OK;
   }
 
-  Logger::warn("D3D9IndexBuffer::QueryInterface: Unknown interface query");
+  Logger::warn("D3D9IndexBuffer::QueryInterface: Unknown interface query:");
   Logger::warn(riid);
   return E_NOINTERFACE;
 }
@@ -51,8 +52,9 @@ HRESULT STDMETHODCALLTYPE D3D9IndexBuffer::Unlock() {
   return m_d3d8->Unlock();
 }
 
-D3D9VertexBuffer::D3D9VertexBuffer(d3d8::IDirect3DVertexBuffer8* d3d8VertexBuffer)
-: m_d3d8 ( d3d8VertexBuffer ) {
+D3D9VertexBuffer::D3D9VertexBuffer(IDirect3DDevice9* device, d3d8::IDirect3DVertexBuffer8* d3d8VertexBuffer)
+  : D3D9Resource(device, reinterpret_cast<d3d8::IDirect3DResource8*>(d3d8VertexBuffer))
+  , m_d3d8 ( d3d8VertexBuffer ) {
 }
 
 D3D9VertexBuffer::~D3D9VertexBuffer() {
@@ -67,13 +69,13 @@ HRESULT STDMETHODCALLTYPE D3D9VertexBuffer::QueryInterface(
   *ppvObject = nullptr;
 
   if (riid == __uuidof(IUnknown)
-    || riid == __uuidof(IDirect3DResource9)
-    || riid == __uuidof(IDirect3DVertexBuffer9)) {
-    *ppvObject = this->IncrementRef();
+   || riid == __uuidof(IDirect3DResource9)
+   || riid == __uuidof(IDirect3DVertexBuffer9)) {
+    *ppvObject = ref(this);
     return S_OK;
   }
 
-  Logger::warn("D3D9VertexBuffer::QueryInterface: Unknown interface query");
+  Logger::warn("D3D9VertexBuffer::QueryInterface: Unknown interface query:");
   Logger::warn(riid);
   return E_NOINTERFACE;
 }

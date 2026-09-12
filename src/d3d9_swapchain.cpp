@@ -1,8 +1,8 @@
 #include "d3d9_swapchain.h"
 
 D3D9SwapChain::D3D9SwapChain(IDirect3DDevice9* device, d3d8::IDirect3DSwapChain8* swapChain8)
-: m_device ( device )
-, m_d3d8 ( swapChain8 ) {
+  : m_device ( device )
+  , m_d3d8 ( swapChain8 ) {
 }
 
 D3D9SwapChain::~D3D9SwapChain() {
@@ -15,12 +15,12 @@ HRESULT STDMETHODCALLTYPE D3D9SwapChain::QueryInterface(REFIID riid, void** ppvO
   *ppvObject = nullptr;
 
   if (riid == __uuidof(IUnknown)
-    || riid == __uuidof(IDirect3DSwapChain9)) {
-    *ppvObject = this->IncrementRef();
+   || riid == __uuidof(IDirect3DSwapChain9)) {
+    *ppvObject = ref(this);
     return S_OK;
   }
 
-  Logger::warn("D3D9SwapChainEx::QueryInterface: Unknown interface query");
+  Logger::warn("D3D9SwapChainEx::QueryInterface: Unknown interface query:");
   Logger::warn(riid);
   return E_NOINTERFACE;
 }

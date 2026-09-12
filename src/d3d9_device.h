@@ -4,13 +4,19 @@
 #include "d3d9_com_object.h"
 #include "d3d9_logger.h"
 
+#include "d3d9_buffer.h"
+#include "d3d9_surface.h"
+#include "d3d9_shader.h"
+#include "d3d9_texture.h"
+#include "d3d9_vertex_declaration.h"
+
 #include <array>
 
 class D3D9Device final : public ComObjectClamp<IDirect3DDevice9> {
 
 public:
 
-  D3D9Device(d3d8::IDirect3DDevice8* d3d8Device);
+  D3D9Device(IDirect3D9* intf, d3d8::IDirect3DDevice8* d3d8Device);
 
   ~D3D9Device();
 
@@ -450,13 +456,24 @@ public:
 
 private:
 
-  UINT                              m_baseVertexIndex = 0;
+  UINT                               m_baseVertexIndex = 0;
+  std::array<UINT, 16>               m_streamSourceStride;
 
-  ComObject<d3d8::IDirect3DDevice8> m_d3d8;
+  IDirect3D9*                        m_intf;
 
-  ComObject<IDirect3DSurface9>      m_rt;
-  ComObject<IDirect3DSurface9>      m_ds;
+  ComObject<d3d8::IDirect3DDevice8>  m_d3d8;
 
-  std::array<ComObject<IDirect3DBaseTexture9>, 8> m_textures;
+  ComObject<D3D9Surface, false>      m_rt;
+  ComObject<D3D9Surface, false>      m_ds;
+
+  ComObject<D3D9VertexShader, false> m_vs;
+  ComObject<D3D9PixelShader, false>  m_ps;
+
+  ComObject<D3D9VertexDecl, false>   m_vertexDecl;
+
+  ComObject<D3D9IndexBuffer>         m_indices;
+  std::array<ComObject<D3D9VertexBuffer>, 16> m_streamSource;
+
+  std::array<ComObject<D3D9Texture2D, false>, 8> m_textures;
 
 };

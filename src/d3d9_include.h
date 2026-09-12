@@ -13,10 +13,6 @@
 
 #if defined(__MINGW32__) || defined(__GNUC__)
 
-// Avoid redundant definitions (add D3D*_DEFINED macros here)
-#define D3DRECT_DEFINED
-#define D3DMATRIX_DEFINED
-
 // Temporarily undefine __CRT_UUID_DECL
 // to allow imports in the d3d9 namespace
 #pragma push_macro("__CRT_UUID_DECL")
@@ -71,84 +67,20 @@ interface DECLSPEC_UUID("4B8AAAFA-140F-42BA-9131-597EAFAA2EAD") d3d8::IDirect3DV
   #define DLLEXPORT
 #endif
 
-// Missed definitions in Wine/MinGW.
+#define D3D_SDK_VERSION_D3D8 220
 
-#ifndef D3DPRESENT_BACK_BUFFERS_MAX_EX
-#define D3DPRESENT_BACK_BUFFERS_MAX_EX    30
+// Included only in d3d9types.h
+
+#ifndef D3DDECL_END
+#define D3DDECL_END() {0xFF,0,D3DDECLTYPE_UNUSED,0,0,0}
 #endif
 
-#ifndef D3DSI_OPCODE_MASK
-#define D3DSI_OPCODE_MASK                 0x0000FFFF
+// pixel/vertex shader end token
+#ifndef D3DPS_END
+#define D3DPS_END()  0x0000FFFF
 #endif
 
-#ifndef D3DSP_TEXTURETYPE_MASK
-#define D3DSP_TEXTURETYPE_MASK            0x78000000
+#ifndef D3DVS_END
+#define D3DVS_END()  0x0000FFFF
 #endif
 
-#ifndef D3DUSAGE_AUTOGENMIPMAP
-#define D3DUSAGE_AUTOGENMIPMAP            0x00000400L
-#endif
-
-#ifndef D3DSP_DCL_USAGE_MASK
-#define D3DSP_DCL_USAGE_MASK              0x0000000f
-#endif
-
-#ifndef D3DSP_OPCODESPECIFICCONTROL_MASK
-#define D3DSP_OPCODESPECIFICCONTROL_MASK  0x00ff0000
-#endif
-
-#ifndef D3DSP_OPCODESPECIFICCONTROL_SHIFT
-#define D3DSP_OPCODESPECIFICCONTROL_SHIFT 16
-#endif
-
-#ifndef D3DCURSOR_IMMEDIATE_UPDATE
-#define D3DCURSOR_IMMEDIATE_UPDATE        0x00000001L
-#endif
-
-#ifndef D3DPRESENT_FORCEIMMEDIATE
-#define D3DPRESENT_FORCEIMMEDIATE         0x00000100L
-#endif
-
-// From d3dtypes.h
-
-#ifndef D3DDEVINFOID_TEXTUREMANAGER
-#define D3DDEVINFOID_TEXTUREMANAGER       1
-#endif
-
-#ifndef D3DDEVINFOID_D3DTEXTUREMANAGER
-#define D3DDEVINFOID_D3DTEXTUREMANAGER    2
-#endif
-
-#ifndef D3DDEVINFOID_TEXTURING
-#define D3DDEVINFOID_TEXTURING            3
-#endif
-
-// From d3dhal.h
-
-#ifndef D3DDEVINFOID_VCACHE
-#define D3DDEVINFOID_VCACHE               4
-#endif
-
-// MinGW headers are broken. Who'dve guessed?
-#ifndef _MSC_VER
-
-// Missing from d3d8types.h
-#ifndef D3DDEVINFOID_RESOURCEMANAGER
-#define D3DDEVINFOID_RESOURCEMANAGER      5
-#endif
-
-#ifndef D3DDEVINFOID_VERTEXSTATS
-#define D3DDEVINFOID_VERTEXSTATS          6 // Aka D3DDEVINFOID_D3DVERTEXSTATS
-#endif
-
-#ifndef D3DPRESENT_RATE_UNLIMITED
-#define D3DPRESENT_RATE_UNLIMITED         0x7FFFFFFF
-#endif
-
-#else // _MSC_VER
-
-// These are enum typedefs in the MinGW headers, but not defined by Microsoft
-#define D3DVSDT_TYPE                      DWORD
-#define D3DVSDE_REGISTER                  DWORD
-
-#endif

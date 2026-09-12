@@ -11,34 +11,58 @@ public:
 
   ULONG STDMETHODCALLTYPE AddRef() {
     ULONG refCount = m_refCount++;
+    if (!refCount)
+      AddRefPrivate();
     return refCount + 1;
   }
 
   ULONG STDMETHODCALLTYPE Release() {
-    ULONG refCount = this->m_refCount;
-    if (refCount != 0ul) {
-      this->m_refCount--;
-      refCount--;
-
-      if (refCount == 0ul)
-        delete this;
-    }
-
+    ULONG refCount = --m_refCount;
+    if (!refCount)
+      ReleasePrivate();
     return refCount;
   }
 
-  BaseObject* IncrementRef() {
-    this->AddRef();
-    return this;
+  void AddRefPrivate() {
+    ++m_refPrivate;
+  }
+
+  void ReleasePrivate() {
+    ULONG refPrivate = --m_refPrivate;
+    if (!refPrivate) {
+      m_refPrivate += 0x80000000;
+      delete this;
+    }
   }
 
 protected:
 
   std::atomic<ULONG> m_refCount = { 0ul };
+  std::atomic<ULONG> m_refPrivate = { 0ul };
 
 };
 
 template<typename T>
+T* ref(T* object) {
+  if (object != nullptr)
+    object->AddRef();
+  return object;
+}
+
+template<typename T, bool Public>
+struct ComRef_ {
+  static void incRef(T* ptr) { ptr->AddRef(); }
+  static void decRef(T* ptr) { ptr->Release(); }
+};
+
+
+template<typename T>
+struct ComRef_<T, false> {
+  static void incRef(T* ptr) { ptr->AddRefPrivate(); }
+  static void decRef(T* ptr) { ptr->ReleasePrivate(); }
+};
+
+template<typename T, bool Public = true>
 class ComObject {
 
 public:
@@ -47,14 +71,12 @@ public:
   ComObject(std::nullptr_t) { }
   ComObject(T* object)
   : m_ptr(object) {
-    if (m_ptr != nullptr)
-      m_ptr->AddRef();
+    this->incRef();
   }
 
   ComObject(const ComObject& other)
   : m_ptr(other.m_ptr) {
-    if (m_ptr != nullptr)
-      m_ptr->AddRef();
+    this->incRef();
   }
 
   ComObject(ComObject&& other)
@@ -64,56 +86,46 @@ public:
 
   ComObject& operator = (T* object) {
     if (m_ptr != object) {
-      if (m_ptr != nullptr)
-        m_ptr->Release();
+      this->decRef();
       m_ptr = object;
-      if (m_ptr != nullptr)
-        m_ptr->AddRef();
+      this->incRef();
     }
     return *this;
   }
 
   ComObject& operator = (const ComObject& other) {
-    if (other != nullptr)
-      other.ref();
-    if (m_ptr != nullptr)
-      m_ptr->Release();
+    other.incRef();
+    this->decRef();
     m_ptr = other.m_ptr;
     return *this;
   }
 
   ComObject& operator = (ComObject&& other) {
-    if (m_ptr != nullptr)
-      m_ptr->Release();
+    this->decRef();
     this->m_ptr = other.m_ptr;
     other.m_ptr = nullptr;
     return *this;
   }
 
   ComObject& operator = (std::nullptr_t) {
-    if (m_ptr != nullptr) {
-      m_ptr->Release();
-      m_ptr = nullptr;
-    }
+    this->decRef();
+    m_ptr = nullptr;
     return *this;
   }
 
   ~ComObject() {
-    if (m_ptr != nullptr) {
-      m_ptr->Release();
-      m_ptr = nullptr;
-    }
+    this->decRef();
+    m_ptr = nullptr;
   }
 
   T* operator -> () const {
     return m_ptr;
   }
 
-  T**       operator & ()       { return &m_ptr; }
-  T* const* operator & () const { return &m_ptr; }
-
-  bool operator == (const ComObject<T>& other) const { return m_ptr == other.m_ptr; }
-  bool operator != (const ComObject<T>& other) const { return m_ptr != other.m_ptr; }
+  template<bool Public_>
+  bool operator == (const ComObject<T, Public_>& other) const { return m_ptr == other.m_ptr; }
+  template<bool Public_>
+  bool operator != (const ComObject<T, Public_>& other) const { return m_ptr != other.m_ptr; }
 
   bool operator == (const T* other) const { return m_ptr == other; }
   bool operator != (const T* other) const { return m_ptr != other; }
@@ -131,6 +143,9 @@ public:
     return m_ptr;
   }
 
+  ComObject<T, true>  pubRef() const { return m_ptr; }
+  ComObject<T, false> prvRef() const { return m_ptr; }
+
   explicit operator bool () const {
     return m_ptr != nullptr;
   }
@@ -138,6 +153,16 @@ public:
 private:
 
   T* m_ptr = nullptr;
+
+  void incRef() const {
+    if (m_ptr != nullptr)
+      ComRef_<T, Public>::incRef(m_ptr);
+  }
+
+  void decRef() const {
+    if (m_ptr != nullptr)
+      ComRef_<T, Public>::decRef(m_ptr);
+  }
 
 };
 

@@ -6,6 +6,7 @@
 
 class D3DFE_PROCESSVERTICES;
 using PSGPERRORID = UINT;
+
 using Logger = ThreadSafeLogger;
 
 HMODULE GetD3D8Module() {
@@ -39,26 +40,25 @@ extern "C" {
       HMODULE d3d8 = GetD3D8Module();
 
       if (d3d8 == nullptr) {
-        Logger::err("Direct3DCreate9: Failed to load d3d8.dll!");
+        Logger::err("Direct3DCreate9:: Failed to load d3d8.dll!");
         return nullptr;
       }
 
       Direct3DCreate8 = reinterpret_cast<Direct3DCreate8_t>(GetProcAddress(d3d8, "Direct3DCreate8"));
 
       if (Direct3DCreate8 == nullptr) {
-        Logger::err("Direct3DCreate9: Failed GetProcAddress");
+        Logger::err("Direct3DCreate9:: Failed GetProcAddress");
         return nullptr;
       }
     }
 
-    d3d8::IDirect3D8* d3d8Intf = Direct3DCreate8(220); //D3D8: D3D_SDK_VERSION 220
+    d3d8::IDirect3D8* d3d8Intf = Direct3DCreate8(D3D_SDK_VERSION_D3D8);
     if (d3d8Intf == nullptr) {
-      Logger::err("Direct3DCreate9: Failed to create a D3D8 interface!");
+      Logger::err("Direct3DCreate9:: Failed to create a D3D8 interface!");
       return nullptr;
     }
 
-    D3D9Interface* d3d9Intf = new D3D9Interface(d3d8Intf);
-    return d3d9Intf->IncrementRef();
+    return ref(new D3D9Interface(d3d8Intf));
   }
 
   DLLEXPORT HRESULT __stdcall Direct3DCreate9Ex(UINT nSDKVersion, IDirect3D9Ex** ppDirect3D9Ex) {
@@ -115,9 +115,7 @@ extern "C" {
 
   DLLEXPORT void* __stdcall Direct3DShaderValidatorCreate9(void) {
     Logger::info("Direct3DShaderValidatorCreate9::");
-
-    D3D9ShaderValidator* shaderValidator = new D3D9ShaderValidator();
-    return shaderValidator->IncrementRef();
+    return ref(new D3D9ShaderValidator());
   }
 
   DLLEXPORT int __stdcall Direct3D9EnableMaximizedWindowedModeShim(UINT a) {

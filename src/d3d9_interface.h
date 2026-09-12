@@ -89,10 +89,9 @@ public:
 
 private:
 
-  ComObject<d3d8::IDirect3D8> m_d3d8;
+  ComObject<d3d8::IDirect3D8>      m_d3d8;
 
-  UINT                                                    m_adapterCount = 0;
-  std::vector<std::array<UINT, 2>>                        m_adapterModeCounts;
+  std::vector<std::array<UINT, 2>> m_adapterModeCounts;
   std::vector<std::array<std::vector<D3DDISPLAYMODE>, 2>> m_adapterModes;
 
 };

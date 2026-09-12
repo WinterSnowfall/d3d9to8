@@ -21,12 +21,12 @@ HRESULT STDMETHODCALLTYPE D3D9StateBlock::QueryInterface(
   *ppvObject = nullptr;
 
   if (riid == __uuidof(IUnknown)
-    || riid == __uuidof(IDirect3DStateBlock9)) {
-    *ppvObject = this->IncrementRef();
+   || riid == __uuidof(IDirect3DStateBlock9)) {
+    *ppvObject = ref(this);
     return S_OK;
   }
 
-  Logger::warn("D3D9StateBlock::QueryInterface: Unknown interface query");
+  Logger::warn("D3D9StateBlock::QueryInterface: Unknown interface query:");
   Logger::warn(riid);
   return E_NOINTERFACE;
 }

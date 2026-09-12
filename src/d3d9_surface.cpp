@@ -3,7 +3,7 @@
 #include "d3d9_util.h"
 
 D3D9Surface::D3D9Surface(IDirect3DDevice9* device, d3d8::IDirect3DSurface8* d3d8Surface)
-  : m_device ( device )
+  : D3D9Resource (device, reinterpret_cast<d3d8::IDirect3DResource8*>(d3d8Surface))
   , m_d3d8 ( d3d8Surface ) {
 }
 
@@ -19,11 +19,11 @@ HRESULT STDMETHODCALLTYPE D3D9Surface::QueryInterface(REFIID riid, void** ppvObj
   if (riid == __uuidof(IUnknown)
     || riid == __uuidof(IDirect3DResource9)
     || riid == __uuidof(IDirect3DSurface9)) {
-    *ppvObject = this->IncrementRef();
+    *ppvObject = ref(this);
     return S_OK;
   }
 
-  Logger::warn("D3D9Surface::QueryInterface: Unknown interface query");
+  Logger::warn("D3D9Surface::QueryInterface: Unknown interface query:");
   Logger::warn(riid);
   return E_NOINTERFACE;
 }
@@ -61,11 +61,17 @@ HRESULT STDMETHODCALLTYPE D3D9Surface::UnlockRect() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Surface::GetDC(HDC *phDC) {
-  Logger::warn("D3D9Surface::GetDC: Stub!");
+  Logger::err("D3D9Surface::GetDC: Unsupported call!");
   return D3D_OK;
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Surface::ReleaseDC(HDC hDC) {
-  Logger::warn("D3D9Surface::ReleaseDC: Stub!");
+  Logger::err("D3D9Surface::ReleaseDC: Unsupported call!");
   return D3D_OK;
 }
+
+HRESULT STDMETHODCALLTYPE D3D9Surface::GetContainer(REFIID riid, void** ppContainer) {
+  Logger::warn("D3D9Surface::GetContainer: Stub!");
+  return D3D_OK;
+}
+

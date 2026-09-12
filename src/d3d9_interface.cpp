@@ -7,27 +7,29 @@ using Logger = ThreadSafeLogger;
 
 D3D9Interface::D3D9Interface(d3d8::IDirect3D8* d3d8Intf)
   : m_d3d8 (d3d8Intf) {
-  m_adapterCount = m_d3d8->GetAdapterCount();
-  m_adapterModeCounts.resize(m_adapterCount);
-  m_adapterModes.reserve(m_adapterCount);
+  const UINT adapterCount = m_d3d8->GetAdapterCount();
 
-  for (UINT adapter = 0; adapter < m_adapterCount; adapter++) {
+  m_adapterModeCounts.resize(adapterCount);
+  m_adapterModes.reserve(adapterCount);
+
+  for (UINT adapter = 0; adapter < adapterCount; adapter++) {
     m_adapterModes.emplace_back();
 
-    // cache adapter modes and mode counts for each d3d9 format
+    // cache adapter modes and mode counts for each of the two supported
+    // D3D8 adapter formats: D3DFMT_X8R8G8B8 and D3DFMT_R5G6B5
     const UINT modeCount = m_d3d8->GetAdapterModeCount(adapter);
+
     for (UINT mode = 0; mode < modeCount; mode++) {
       D3DDISPLAYMODE displayMode;
       m_d3d8->EnumAdapterModes(adapter, mode, reinterpret_cast<d3d8::D3DDISPLAYMODE*>(&displayMode));
+
       switch (D3DFORMAT(displayMode.Format)) {
         case D3DFMT_X8R8G8B8:
           m_adapterModes[adapter][0].emplace_back(displayMode);
-          // can't use modeCount as it's only for one fmt
           m_adapterModeCounts[adapter][0]++;
           break;
         case D3DFMT_R5G6B5:
           m_adapterModes[adapter][1].emplace_back(displayMode);
-          // can't use modeCount as it's only for one fmt
           m_adapterModeCounts[adapter][1]++;
           break;
         default:
@@ -49,21 +51,21 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::QueryInterface(REFIID riid, void** ppvO
   *ppvObject = nullptr;
 
   if (riid == __uuidof(IUnknown)
-    || riid == __uuidof(IDirect3D9)) {
-    *ppvObject = this->IncrementRef();
+   || riid == __uuidof(IDirect3D9)) {
+    *ppvObject = ref(this);
     return S_OK;
   }
 
   if (riid == __uuidof(IDirect3D9Ex))
     return E_NOINTERFACE;
 
-  Logger::warn("D3D9Interface::QueryInterface: Unknown interface query");
+  Logger::warn("D3D9Interface::QueryInterface: Unknown interface query:");
   Logger::warn(riid);
   return E_NOINTERFACE;
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Interface::RegisterSoftwareDevice(void* pInitializeFunction) {
-  Logger::warn("D3D9Interface::RegisterSoftwareDevice: Stub!");
+  Logger::warn("D3D9Interface::RegisterSoftwareDevice: Unsupported call!");
   return D3D_OK;
 }
 
@@ -143,6 +145,10 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CheckDeviceFormat(
         D3DRESOURCETYPE RType,
         D3DFORMAT       CheckFormat) {
   Logger::info("D3D9Interface::CheckDeviceFormat:");
+
+  if (IsUnsupportedD3D9Format(CheckFormat))
+    Logger::warn("D3D9Interface::CheckDeviceFormat: Query for unsupported format: " + std::to_string(CheckFormat));
+
   return m_d3d8->CheckDeviceFormat(
     Adapter,
     (d3d8::D3DDEVTYPE)DeviceType,
@@ -192,8 +198,8 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CheckDeviceFormatConversion(
         D3DDEVTYPE DeviceType,
         D3DFORMAT  SourceFormat,
         D3DFORMAT  TargetFormat) {
-  Logger::err("D3D9Interface::CheckDeviceFormatConversion: Unsuppoerted Call!");
-  return D3DERR_NOTAVAILABLE;
+  Logger::warn("D3D9Interface::CheckDeviceFormatConversion: Unsupported call!");
+  return D3D_OK;
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Interface::GetDeviceCaps(
@@ -243,8 +249,7 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CreateDevice(
     return hr;
   }
 
-  D3D9Device* d3d9Device = new D3D9Device(d3d8Device);
-  *ppReturnedDeviceInterface = d3d9Device->IncrementRef();
+  *ppReturnedDeviceInterface = ref(new D3D9Device(this, d3d8Device));
 
   return D3D_OK;
 }
@@ -256,7 +261,7 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::EnumAdapterModes(
         D3DDISPLAYMODE* pMode) {
   Logger::info("D3D9Interface::EnumAdapterModes:");
 
-  Logger::debug("D3D9Interface::EnumAdapterModes: Mode: " + std::to_string(Mode));
+  Logger::debug("D3D9Interface::EnumAdapterModes: Mode:   " + std::to_string(Mode));
   Logger::debug("D3D9Interface::EnumAdapterModes: Format: " + std::to_string(Format));
 
   // D3D8 can only use two D3DFMT_X8R8G8B8 (22) and D3DFMT_R5G6B5 (23) as adapter formats

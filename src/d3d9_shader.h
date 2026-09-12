@@ -4,32 +4,21 @@
 #include "d3d9_com_object.h"
 #include "d3d9_logger.h"
 
+#include <vector>
+
 using Logger = ThreadSafeLogger;
 
 class D3D9VertexShader final : public ComObjectClamp<IDirect3DVertexShader9> {
 
 public:
 
-  D3D9VertexShader(IDirect3DDevice9* device, DWORD handle);
+  D3D9VertexShader(IDirect3DDevice9* device, DWORD handle, const DWORD* pFunction);
 
   ~D3D9VertexShader();
 
-  HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject) {
-    if (ppvObject == nullptr)
-      return E_POINTER;
+  HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
 
-    *ppvObject = nullptr;
-
-    if (riid == __uuidof(IUnknown)
-      || riid == __uuidof(IDirect3DVertexShader9)) {
-      *ppvObject = this->IncrementRef();
-      return S_OK;
-    }
-
-    Logger::warn("D3D9Shader::QueryInterface: Unknown interface query");
-    Logger::warn(riid);
-    return E_NOINTERFACE;
-  }
+  HRESULT STDMETHODCALLTYPE GetFunction(void* pOut, UINT* pSizeOfData);
 
   HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) {
     Logger::info("D3D9VertexShader::GetDevice:");
@@ -42,24 +31,17 @@ public:
     return D3D_OK;
   }
 
-  HRESULT STDMETHODCALLTYPE GetFunction(void* pOut, UINT* pSizeOfData) {
-    Logger::warn("D3D9VertexShader::GetFunction: Stub!");
-
-    if (pSizeOfData != nullptr)
-      *pSizeOfData = 0;
-
-    return D3D_OK;
-  }
-
   DWORD GetD3D8VSHandle() {
     return m_handle;
   }
 
 private:
 
-  IDirect3DDevice9* m_device = nullptr;
+  IDirect3DDevice9*  m_device = nullptr;
 
-  DWORD m_handle = 0;
+  DWORD              m_handle = 0;
+
+  std::vector<DWORD> m_function;
 
 };
 
@@ -67,26 +49,11 @@ class D3D9PixelShader final : public ComObjectClamp<IDirect3DPixelShader9> {
 
 public:
 
-  D3D9PixelShader(IDirect3DDevice9* device, DWORD handle);
+  D3D9PixelShader(IDirect3DDevice9* device, DWORD handle, const DWORD* pFunction);
 
   ~D3D9PixelShader();
 
-  HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject) {
-    if (ppvObject == nullptr)
-      return E_POINTER;
-
-    *ppvObject = nullptr;
-
-    if (riid == __uuidof(IUnknown)
-      || riid == __uuidof(IDirect3DPixelShader9)) {
-      *ppvObject = this->IncrementRef();
-      return S_OK;
-    }
-
-    Logger::warn("D3D9Shader::QueryInterface: Unknown interface query");
-    Logger::warn(riid);
-    return E_NOINTERFACE;
-  }
+  HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
 
   HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) {
     Logger::info("D3D9PixelShader::GetDevice:");
@@ -99,14 +66,7 @@ public:
     return D3D_OK;
   }
 
-  HRESULT STDMETHODCALLTYPE GetFunction(void* pOut, UINT* pSizeOfData) {
-    Logger::warn("D3D9PixelShader::GetFunction: Stub!");
-
-    if (pSizeOfData != nullptr)
-      *pSizeOfData = 0;
-
-    return D3D_OK;
-  }
+  HRESULT STDMETHODCALLTYPE GetFunction(void* pOut, UINT* pSizeOfData);
 
   DWORD GetD3D8PSHandle() {
     return m_handle;
@@ -114,8 +74,10 @@ public:
 
 private:
 
-  IDirect3DDevice9* m_device = nullptr;
+  IDirect3DDevice9*  m_device = nullptr;
 
-  DWORD m_handle = 0;
+  DWORD              m_handle = 0;
+
+  std::vector<DWORD> m_function;
 
 };

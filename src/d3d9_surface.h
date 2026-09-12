@@ -2,13 +2,12 @@
 
 #include "d3d9_include.h"
 #include "d3d9_com_object.h"
+#include "d3d9_resource.h"
 #include "d3d9_logger.h"
-
-#include "d3d9_device.h"
 
 using Logger = ThreadSafeLogger;
 
-class D3D9Surface final : public ComObjectClamp<IDirect3DSurface9> {
+class D3D9Surface final : public D3D9Resource<IDirect3DSurface9> {
 
 public:
 
@@ -30,65 +29,13 @@ public:
 
   HRESULT STDMETHODCALLTYPE ReleaseDC(HDC hDC) final;
 
-  HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) {
-    Logger::info("D3D9Surface::GetDevice:");
-
-    if (ppDevice == nullptr)
-      return D3DERR_INVALIDCALL;
-
-    *ppDevice = m_device;
-
-    return D3D_OK;
-  }
-
-  HRESULT STDMETHODCALLTYPE GetContainer(REFIID riid, void** ppContainer) final {
-    Logger::warn("D3D9Surface::GetContainer: Stub!");
-    return D3D_OK;
-  }
-
-  void STDMETHODCALLTYPE PreLoad() {
-    Logger::warn("D3D9Surface::PreLoad: Stub!");
-  }
-
-  HRESULT STDMETHODCALLTYPE SetPrivateData(
-          REFGUID     refguid,
-    const void*       pData,
-          DWORD       SizeOfData,
-          DWORD       Flags) final {
-    Logger::warn("D3D9Surface::SetPrivateData: Stub!");
-    return D3D_OK;
-  }
-
-  HRESULT STDMETHODCALLTYPE GetPrivateData(
-          REFGUID     refguid,
-          void*       pData,
-          DWORD*      pSizeOfData) final {
-    Logger::warn("D3D9Surface::GetPrivateData: Stub!");
-    return D3D_OK;
-  }
-
-  HRESULT STDMETHODCALLTYPE FreePrivateData(REFGUID refguid) final {
-    Logger::warn("D3D9Surface::FreePrivateData: Stub!");
-    return D3D_OK;
-  }
-
-  DWORD STDMETHODCALLTYPE SetPriority(DWORD PriorityNew) {
-    Logger::warn("D3D9Surface::SetPriority: Stub!");
-    return 0;
-  }
-
-  DWORD STDMETHODCALLTYPE GetPriority() {
-    Logger::warn("D3D9Surface::GetPriority: Stub!");
-    return 0;
-  }
+  HRESULT STDMETHODCALLTYPE GetContainer(REFIID riid, void** ppContainer) final;
 
   d3d8::IDirect3DSurface8* GetD3D8Surface() {
     return m_d3d8.ptr();
   }
 
 private:
-
-  IDirect3DDevice9* m_device = nullptr;
 
   ComObject<d3d8::IDirect3DSurface8> m_d3d8;
 

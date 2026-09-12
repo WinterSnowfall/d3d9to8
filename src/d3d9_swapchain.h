@@ -16,17 +16,6 @@ public:
 
   HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
 
-  HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) {
-    Logger::info("D3D9SwapChain::GetDevice:");
-
-    if (ppDevice == nullptr)
-      return D3DERR_INVALIDCALL;
-
-    *ppDevice = m_device;
-
-    return D3D_OK;
-  }
-
   HRESULT STDMETHODCALLTYPE Present(
     const RECT*    pSourceRect,
     const RECT*    pDestRect,
@@ -50,6 +39,17 @@ public:
   HRESULT STDMETHODCALLTYPE GetLastPresentCount(UINT* pLastPresentCount);
 
   HRESULT STDMETHODCALLTYPE GetPresentStats(D3DPRESENTSTATS* pPresentationStatistics);
+
+  HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) {
+    Logger::info("D3D9SwapChain::GetDevice:");
+
+    if (ppDevice == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    *ppDevice = m_device;
+
+    return D3D_OK;
+  }
 
 private:
 
