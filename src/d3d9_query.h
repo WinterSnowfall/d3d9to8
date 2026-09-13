@@ -4,7 +4,18 @@
 #include "d3d9_com_object.h"
 #include "d3d9_logger.h"
 
+#include <chrono>
+
 using Logger = ThreadSafeLogger;
+
+union D3D9_QUERY_DATA {
+  D3DDEVINFO_VCACHE         VCache;
+  DWORD                     Occlusion;
+  UINT64                    Timestamp;
+  BOOL                      TimestampDisjoint;
+  UINT64                    TimestampFreq;
+  D3DDEVINFO_D3DVERTEXSTATS VertexStats;
+};
 
 class D3D9Query : public ComObjectClamp<IDirect3DQuery9> {
 
@@ -28,7 +39,7 @@ public:
     if (ppDevice == nullptr)
       return D3DERR_INVALIDCALL;
 
-    *ppDevice = m_device;
+    *ppDevice = ref(m_device);
 
     return D3D_OK;
   }
@@ -38,5 +49,7 @@ private:
   IDirect3DDevice9* m_device = nullptr;
 
   D3DQUERYTYPE      m_queryType;
+
+  D3D9_QUERY_DATA   m_queryData;
 
 };

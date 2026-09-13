@@ -1,20 +1,57 @@
 #pragma once
 
+#include <d3d9_options.h>
+
 using Logger = ThreadSafeLogger;
 
 // (9<-8) D3DCAPSX: Writes to D3DCAPS9 from D3DCAPS8
 inline void ConvertCaps9(const d3d8::D3DCAPS8& caps8, D3DCAPS9* pCaps9) {
-  // should be aligned
   memset(pCaps9, 0, sizeof(D3DCAPS9));
   memcpy(pCaps9, &caps8, sizeof(d3d8::D3DCAPS8));
 
-  // ensure we report only D3D8-level VS/PS caps at best
-  if (pCaps9->VertexShaderVersion > D3DVS_VERSION(1, 1))
-    pCaps9->VertexShaderVersion = D3DVS_VERSION(1, 1);
-  if (pCaps9->PixelShaderVersion > D3DPS_VERSION(1, 4))
-    pCaps9->PixelShaderVersion  = D3DPS_VERSION(1, 4);
+  if (!D3D9TO8_LENIENT_SHADERS) {
+    // ensure we report only D3D8-level VS/PS caps at best
+    if (pCaps9->VertexShaderVersion > D3DVS_VERSION(1, 1))
+      pCaps9->VertexShaderVersion = D3DVS_VERSION(1, 1);
+    if (pCaps9->PixelShaderVersion > D3DPS_VERSION(1, 4))
+      pCaps9->PixelShaderVersion  = D3DPS_VERSION(1, 4);
+  } else {
+    // fake report full SM3 support (NOT recommended)
+    pCaps9->VertexShaderVersion = D3DVS_VERSION(3, 0);
+    pCaps9->PixelShaderVersion  = D3DPS_VERSION(3, 0);
 
-  // missing in D3D8
+    // These caps are reported only by SM2+ capable GPUs
+    pCaps9->VS20Caps.Caps                    = D3DVS20CAPS_PREDICATION;
+    pCaps9->VS20Caps.DynamicFlowControlDepth = D3DVS20_MAX_DYNAMICFLOWCONTROLDEPTH;
+    pCaps9->VS20Caps.NumTemps                = D3DVS20_MAX_NUMTEMPS;
+    pCaps9->VS20Caps.StaticFlowControlDepth  = D3DVS20_MAX_STATICFLOWCONTROLDEPTH;
+
+    pCaps9->PS20Caps.Caps                    = D3DPS20CAPS_ARBITRARYSWIZZLE
+                                             | D3DPS20CAPS_GRADIENTINSTRUCTIONS
+                                             | D3DPS20CAPS_PREDICATION
+                                             | D3DPS20CAPS_NODEPENDENTREADLIMIT
+                                             | D3DPS20CAPS_NOTEXINSTRUCTIONLIMIT;
+    pCaps9->PS20Caps.DynamicFlowControlDepth = D3DPS20_MAX_DYNAMICFLOWCONTROLDEPTH;
+    pCaps9->PS20Caps.NumTemps                = D3DPS20_MAX_NUMTEMPS;
+    pCaps9->PS20Caps.StaticFlowControlDepth  = D3DPS20_MAX_STATICFLOWCONTROLDEPTH;
+    pCaps9->PS20Caps.NumInstructionSlots     = D3DPS20_MAX_NUMINSTRUCTIONSLOTS;
+
+    // These caps are reported only by SM3 capable GPUs
+    pCaps9->VertexTextureFilterCaps          = D3DPTFILTERCAPS_MINFPOINT
+                                             | D3DPTFILTERCAPS_MINFLINEAR
+                                             | D3DPTFILTERCAPS_MAGFPOINT
+                                             | D3DPTFILTERCAPS_MAGFLINEAR;
+
+    pCaps9->MaxVShaderInstructionsExecuted    = 4294967295;
+    pCaps9->MaxPShaderInstructionsExecuted    = 4294967295;
+
+    pCaps9->MaxVertexShader30InstructionSlots = 32768;
+    pCaps9->MaxPixelShader30InstructionSlots  = 32768;
+  }
+
+  //
+  // add a few D3D9 caps which are missing in D3D8
+  //
   pCaps9->Caps2                 |= D3DCAPS2_CANAUTOGENMIPMAP;
 
   pCaps9->Caps3                 |= D3DCAPS3_LINEAR_TO_SRGB_PRESENTATION
@@ -44,11 +81,56 @@ inline void ConvertCaps9(const d3d8::D3DCAPS8& caps8, D3DCAPS9* pCaps9) {
   pCaps9->StencilCaps           |= D3DSTENCILCAPS_TWOSIDED;
 
   pCaps9->VertexProcessingCaps  |= D3DVTXPCAPS_TEXGEN_SPHEREMAP;
+  //
+  //
+  //
 
-  // removed in D3D9
+  //
+  // remove D3D8 caps which are no longer present in D3D9
+  //
   pCaps9->Caps2                 &= ~D3DCAPS2_CANRENDERWINDOWED;
 
   pCaps9->RasterCaps            &= ~D3DPRASTERCAPS_ZBIAS;
+  //
+  //
+  //
+
+  //
+  // add all the remaining D3D9 caps, which are not present at all in D3D8
+  //
+  // none of the D3D9 DevCaps2 are supported/possible in D3D8
+  pCaps9->DevCaps2                 = 0; //   D3DDEVCAPS2_STREAMOFFSET 
+                                        // | D3DDEVCAPS2_CAN_STRETCHRECT_FROM_TEXTURES
+                                        // | D3DDEVCAPS2_VERTEXELEMENTSCANSHARESTREAMOFFSET;
+
+  pCaps9->MaxNpatchTessellationLevel = 0.0f;
+  pCaps9->Reserved5                  = 0;
+  pCaps9->MasterAdapterOrdinal       = 0;
+  pCaps9->AdapterOrdinalInGroup      = 0;
+  pCaps9->NumberOfAdaptersInGroup    = 1;
+
+  pCaps9->DeclTypes                  = D3DDTCAPS_UBYTE4
+                                     | D3DDTCAPS_UBYTE4N
+                                     | D3DDTCAPS_SHORT2N
+                                     | D3DDTCAPS_SHORT4N
+                                     | D3DDTCAPS_USHORT2N
+                                     | D3DDTCAPS_USHORT4N
+                                     | D3DDTCAPS_UDEC3
+                                     | D3DDTCAPS_DEC3N
+                                     | D3DDTCAPS_FLOAT16_2
+                                     | D3DDTCAPS_FLOAT16_4;
+
+  // D3D8 doesn't support multiple simultaneous render targets
+  pCaps9->NumSimultaneousRTs         = 1;
+
+  // D3D8 doesn't support StretchRect, but report these anyway
+  pCaps9->StretchRectFilterCaps      = D3DPTFILTERCAPS_MINFPOINT
+                                     | D3DPTFILTERCAPS_MINFLINEAR
+                                     | D3DPTFILTERCAPS_MAGFPOINT
+                                     | D3DPTFILTERCAPS_MAGFLINEAR;
+  //
+  //
+  //
 }
 
 // (8<-9) D3DD3DPRESENT_PARAMETERS: Returns D3D8's params given an input for D3D9

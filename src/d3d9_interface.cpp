@@ -235,6 +235,8 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CreateDevice(
   if (ppReturnedDeviceInterface == nullptr)
     return D3DERR_INVALIDCALL;
 
+  ClearReturnPointer(ppReturnedDeviceInterface);
+
   d3d8::D3DPRESENT_PARAMETERS params8 = ConvertPresentParameters8(pPresentationParameters);
 
   ComObject<d3d8::IDirect3DDevice8> d3d8Device;

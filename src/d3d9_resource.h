@@ -23,7 +23,7 @@ public:
     if (ppDevice == nullptr)
       return D3DERR_INVALIDCALL;
 
-    *ppDevice = m_device;
+    *ppDevice = ref(m_device);
 
     return D3D_OK;
   }

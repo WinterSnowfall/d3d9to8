@@ -55,6 +55,8 @@ HRESULT STDMETHODCALLTYPE D3D9Texture2D::GetSurfaceLevel(UINT Level, IDirect3DSu
   if (ppSurfaceLevel == nullptr)
     return D3DERR_INVALIDCALL;
 
+  ClearReturnPointer(ppSurfaceLevel);
+
   ComObject<d3d8::IDirect3DSurface8> d3d8SurfaceLevel;
   HRESULT hr = m_d3d8->GetSurfaceLevel(Level, &d3d8SurfaceLevel);
   if (FAILED(hr)) {
@@ -133,6 +135,8 @@ HRESULT STDMETHODCALLTYPE D3D9TextureCube::GetCubeMapSurface(
   if (ppSurfaceLevel == nullptr)
     return D3DERR_INVALIDCALL;
 
+  ClearReturnPointer(ppSurfaceLevel);
+
   ComObject<d3d8::IDirect3DSurface8> d3d8SurfaceLevel;
   HRESULT hr = m_d3d8->GetCubeMapSurface(d3d8::D3DCUBEMAP_FACES(Face), Level, &d3d8SurfaceLevel);
   if (FAILED(hr))
@@ -200,6 +204,8 @@ HRESULT STDMETHODCALLTYPE D3D9Texture3D::GetLevelDesc(UINT Level, D3DVOLUME_DESC
 HRESULT STDMETHODCALLTYPE D3D9Texture3D::GetVolumeLevel(UINT Level, IDirect3DVolume9** ppSurfaceLevel) {
   if (ppSurfaceLevel == nullptr)
     return D3DERR_INVALIDCALL;
+
+  ClearReturnPointer(ppSurfaceLevel);
 
   ComObject<d3d8::IDirect3DVolume8> d3d8VolumeLevel;
   HRESULT hr = m_d3d8->GetVolumeLevel(Level, &d3d8VolumeLevel);

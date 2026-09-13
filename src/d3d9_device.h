@@ -469,25 +469,25 @@ private:
   inline void ClearCachedD3D8Objects() {
     m_presentParams.BackBufferCount = std::max(m_presentParams.BackBufferCount, 1u);
 
-    m_backBuffers.clear();
-    m_backBuffers.resize(m_presentParams.BackBufferCount);
-
     m_renderTarget = nullptr;
     m_depthStencil = nullptr;
 
     m_autoDepthStencil = nullptr;
 
-    m_textures.fill(nullptr);
+    m_backBuffers.clear();
+    m_backBuffers.resize(m_presentParams.BackBufferCount);
+
+    m_baseVertexIndex = 0u;
+    m_indices = nullptr;
 
     m_streamSource.fill(nullptr);
     m_streamSourceStride.fill(0u);
-    m_indices = nullptr;
+
+    m_textures.fill(nullptr);
 
     m_vertexShader = nullptr;
     m_pixelShader = nullptr;
     m_vertexDecl = nullptr;
-
-    m_baseVertexIndex = 0u;
   }
 
   inline void CacheD3D8ObjectsAndRestoreState() {
@@ -510,9 +510,6 @@ private:
     m_d3d8->SetRenderState(d3d8::D3DRS_POINTSIZE_MIN, bitcast<DWORD>(1.0f));
   }
 
-  UINT                                        m_baseVertexIndex = 0;
-  std::array<UINT, D3D9TO8_MAX_STREAMS>       m_streamSourceStride;
-
   IDirect3D9*                                 m_intf;
 
   ComObject<d3d8::IDirect3DDevice8>           m_d3d8;
@@ -522,16 +519,20 @@ private:
   ComObject<D3D9Surface, false>               m_renderTarget;
   ComObject<D3D9Surface, false>               m_depthStencil;
 
-  std::vector<ComObject<D3D9Surface, false>>  m_backBuffers;
   ComObject<D3D9Surface, false>               m_autoDepthStencil;
+
+  std::vector<ComObject<D3D9Surface, false>>  m_backBuffers;
 
   ComObject<D3D9VertexShader, false>          m_vertexShader;
   ComObject<D3D9PixelShader, false>           m_pixelShader;
 
   ComObject<D3D9VertexDecl, false>            m_vertexDecl;
 
-  ComObject<D3D9IndexBuffer>                  m_indices;
-  std::array<ComObject<D3D9VertexBuffer>, D3D9TO8_MAX_STREAMS> m_streamSource;
+  UINT                                        m_baseVertexIndex = 0;
+  ComObject<D3D9IndexBuffer, false>           m_indices;
+
+  std::array<UINT, D3D9TO8_MAX_STREAMS>       m_streamSourceStride;
+  std::array<ComObject<D3D9VertexBuffer, false>, D3D9TO8_MAX_STREAMS> m_streamSource;
 
   std::array<ComObject<D3D9Texture2D, false>, D3D9TO8_MAX_TEXTURE_STAGES> m_textures;
 

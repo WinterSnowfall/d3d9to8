@@ -50,15 +50,38 @@ DWORD STDMETHODCALLTYPE D3D9Query::GetDataSize() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Query::Issue(DWORD dwIssueFlags) {
-  Logger::warn("D3D9Query::Issue: Stub!");
   return D3D_OK;
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Query::GetData(void* pData, DWORD dwSize, DWORD dwGetDataFlags) {
-  Logger::warn("D3D9Query::GetData: Stub!");
+  if (pData == nullptr && dwSize != 0)
+    return D3DERR_INVALIDCALL;
 
-  if (pData != nullptr)
-    memset(pData, 0, dwSize);
+  if (pData != nullptr) {
+    switch (m_queryType) {
+      case D3DQUERYTYPE_EVENT:
+        *static_cast<BOOL*>(pData) = true;
+        break;
+      case D3DQUERYTYPE_VCACHE: {
+        static constexpr D3DDEVINFO_VCACHE VCACHE_DATA = { MAKEFOURCC('C', 'A', 'C', 'H'), 1, 16, 7 };
+        memcpy(pData, &VCACHE_DATA, dwSize);
+        break;
+      }
+      case D3DQUERYTYPE_TIMESTAMP: {
+        const uint64_t time = static_cast<uint64_t>(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
+        memcpy(pData, &time, dwSize);
+        break;
+      }
+      case D3DQUERYTYPE_TIMESTAMPDISJOINT:
+        *static_cast<BOOL*>(pData) = true;
+        break;
+      case D3DQUERYTYPE_TIMESTAMPFREQ:
+        memset(pData, 0, dwSize);
+        break;
+      default:
+        return S_FALSE;
+    }
+  }
 
-  return D3D_OK;
+  return S_OK;
 }

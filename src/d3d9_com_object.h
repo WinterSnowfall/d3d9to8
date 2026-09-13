@@ -49,6 +49,12 @@ protected:
 };
 
 template<typename T>
+inline void ClearReturnPointer(T** ptr) {
+  if (ptr != nullptr)
+    *ptr = nullptr;
+}
+
+template<typename T>
 T* ref(T* object) {
   if (object != nullptr)
     object->AddRef();

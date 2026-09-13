@@ -12,6 +12,7 @@ Known limitations include:
 - Use of various D3D9 exclusive sampler/texture stage states and texture formats
 - Multiple swapchain use (thankfully, it is rare even in D3D9)
 - SetStreamSource calls using offsets
+- Use of multiple simultaneous render targets
 - DrawIndexedPrimitive calls using a negative BaseVertexIndex (should be relatively rare)
 - Other minor D3D9 exclusive API calls
 
@@ -26,7 +27,7 @@ Why the dark forces of Chaos, of course. No, it was my love for D3D8 mostly, and
 
 ### Are there any known working games?
 
-Among known working titles, I can mention: all the games in the original _W40K: Dawn of War_ collection (NOT the Definitive Edition, mind you), _Machinarium_, _Majesty HD_, _Seven Kingdoms: Ancient Adversaries_, _Beyond Divinity_, _Outcast 1.1_, _Sid Meyer's Pirates! (Live the Life)_, _Amnesia: Memories_ and a few others. The list might expand in the future, but probably not by a lot.
+Among known fully working titles, I can mention: all the games in the original _W40K: Dawn of War_ collection (NOT the Definitive Edition, mind you), _Aliens versus Predator (Classic 2000)_, _Gun_, _Machinarium_, _Majesty HD_, _Seven Kingdoms: Ancient Adversaries_, _Beyond Divinity_, _Outcast 1.1_, _Sid Meyer's Pirates! (Live the Life)_, _Amnesia: Memories_ and a few others. The list might expand in the future, but probably not by a lot.
 
 Since we report the same capabilities that a D3D8 level card would report to these D3D9 games, we rely on them having fallback paths for such cases. Many later D3D9 games do not, and will outright refuse to run. Some may run with some degree of visual artifacting, or crash at later points in time, when they run into something unexpected.
 
