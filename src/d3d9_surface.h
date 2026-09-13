@@ -31,7 +31,7 @@ public:
 
   HRESULT STDMETHODCALLTYPE GetContainer(REFIID riid, void** ppContainer) final;
 
-  d3d8::IDirect3DSurface8* GetD3D8Surface() {
+  d3d8::IDirect3DSurface8* GetD3D8Surface() const {
     return m_d3d8.ptr();
   }
 

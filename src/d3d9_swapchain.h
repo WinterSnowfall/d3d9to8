@@ -41,8 +41,6 @@ public:
   HRESULT STDMETHODCALLTYPE GetPresentStats(D3DPRESENTSTATS* pPresentationStatistics);
 
   HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) {
-    Logger::info("D3D9SwapChain::GetDevice:");
-
     if (ppDevice == nullptr)
       return D3DERR_INVALIDCALL;
 

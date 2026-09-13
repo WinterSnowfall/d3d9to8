@@ -36,6 +36,11 @@ D3D9Interface::D3D9Interface(d3d8::IDirect3D8* d3d8Intf)
           break;
       }
     }
+
+    Logger::info("D3D9Interface:: Cached " + std::to_string(m_adapterModeCounts[adapter][0]) +
+                 " D3DFMT_X8R8G8B8 display modes for adapter " + std::to_string(adapter));
+    Logger::info("D3D9Interface:: Cached " + std::to_string(m_adapterModeCounts[adapter][1]) +
+                 " D3DFMT_R5G6B5 display modes for adapter " + std::to_string(adapter));
   }
 }
 
@@ -43,8 +48,6 @@ D3D9Interface::~D3D9Interface() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Interface::QueryInterface(REFIID riid, void** ppvObject) {
-  Logger::info("D3D9Interface::QueryInterface:");
-
   if (ppvObject == nullptr)
     return E_POINTER;
 
@@ -70,7 +73,6 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::RegisterSoftwareDevice(void* pInitializ
 }
 
 UINT STDMETHODCALLTYPE D3D9Interface::GetAdapterCount() {
-  Logger::info("D3D9Interface::GetAdapterCount:");
   return m_d3d8->GetAdapterCount();
 }
 
@@ -78,8 +80,6 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::GetAdapterIdentifier(
         UINT                    Adapter,
         DWORD                   Flags,
         D3DADAPTER_IDENTIFIER9* pIdentifier) {
-  Logger::info("D3D9Interface::GetAdapterCount:");
-
   d3d8::D3DADAPTER_IDENTIFIER8 identifier8;
   HRESULT hr = m_d3d8->GetAdapterIdentifier(Adapter, Flags, &identifier8);
   if (FAILED(hr))
@@ -101,27 +101,20 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::GetAdapterIdentifier(
 }
 
 UINT STDMETHODCALLTYPE D3D9Interface::GetAdapterModeCount(UINT Adapter, D3DFORMAT Format) {
-  Logger::info("D3D9Interface::GetAdapterModeCount:");
-
-  Logger::debug("D3D9Interface::GetAdapterModeCount: Format: " + std::to_string(Format));
-
   // D3D8 can only use two D3DFMT_X8R8G8B8 (22) and D3DFMT_R5G6B5 (23) as adapter formats
   switch (Format) {
     case D3DFMT_X8R8G8B8:
-      Logger::debug("D3D9Interface::GetAdapterModeCount: D3DFMT_X8R8G8B8: " + std::to_string(m_adapterModeCounts[Adapter][0]));
       return m_adapterModeCounts[Adapter][0];
     case D3DFMT_R5G6B5:
-      Logger::debug("D3D9Interface::GetAdapterModeCount: D3DFMT_R5G6B5: " + std::to_string(m_adapterModeCounts[Adapter][1]));
       return m_adapterModeCounts[Adapter][1];
     default:
-      return 0;
+      Logger::debug("D3D9Interface::GetAdapterModeCount: Unsupported adapter format: " + std::to_string(Format));
   }
 
   return 0;
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Interface::GetAdapterDisplayMode(UINT Adapter, D3DDISPLAYMODE* pMode) {
-  Logger::info("D3D9Interface::GetAdapterDisplayMode:");
   return m_d3d8->GetAdapterDisplayMode(Adapter, reinterpret_cast<d3d8::D3DDISPLAYMODE*>(pMode));
 }
 
@@ -131,7 +124,11 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CheckDeviceType(
         D3DFORMAT  AdapterFormat,
         D3DFORMAT  BackBufferFormat,
         BOOL       bWindowed) {
-  Logger::info("D3D9Interface::CheckDeviceType:");
+  if (!IsSupportedD3D8AdapterFormat(AdapterFormat)) {
+    Logger::debug("D3D9Interface::CheckDeviceType: Query for unsupported adapter format: " + std::to_string(AdapterFormat));
+    return D3DERR_INVALIDCALL;
+  }
+
   return m_d3d8->CheckDeviceType(Adapter, d3d8::D3DDEVTYPE(DevType),
                                  d3d8::D3DFORMAT(AdapterFormat),
                                  d3d8::D3DFORMAT(BackBufferFormat), bWindowed);
@@ -144,7 +141,10 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CheckDeviceFormat(
         DWORD           Usage,
         D3DRESOURCETYPE RType,
         D3DFORMAT       CheckFormat) {
-  Logger::info("D3D9Interface::CheckDeviceFormat:");
+  if (!IsSupportedD3D8AdapterFormat(AdapterFormat)) {
+    Logger::debug("D3D9Interface::CheckDeviceFormat: Query for unsupported adapter format: " + std::to_string(AdapterFormat));
+    return D3DERR_INVALIDCALL;
+  }
 
   if (IsUnsupportedD3D9Format(CheckFormat))
     Logger::warn("D3D9Interface::CheckDeviceFormat: Query for unsupported format: " + std::to_string(CheckFormat));
@@ -166,8 +166,6 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CheckDeviceMultiSampleType(
         BOOL                Windowed,
         D3DMULTISAMPLE_TYPE MultiSampleType,
         DWORD*              pQualityLevels) {
-  Logger::info("D3D9Interface::CheckDeviceMultiSampleType:");
-
   if (pQualityLevels != nullptr)
     *pQualityLevels = 0;
 
@@ -186,7 +184,11 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CheckDepthStencilMatch(
         D3DFORMAT  AdapterFormat,
         D3DFORMAT  RenderTargetFormat,
         D3DFORMAT  DepthStencilFormat) {
-  Logger::info("D3D9Interface::CheckDepthStencilMatch:");
+  if (!IsSupportedD3D8AdapterFormat(AdapterFormat)) {
+    Logger::debug("D3D9Interface::CheckDepthStencilMatch: Query for unsupported adapter format: " + std::to_string(AdapterFormat));
+    return D3DERR_INVALIDCALL;
+  }
+
   return m_d3d8->CheckDepthStencilMatch(Adapter, d3d8::D3DDEVTYPE(DeviceType),
                                         d3d8::D3DFORMAT(AdapterFormat),
                                         d3d8::D3DFORMAT(RenderTargetFormat),
@@ -206,8 +208,6 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::GetDeviceCaps(
         UINT       Adapter,
         D3DDEVTYPE DeviceType,
         D3DCAPS9*  pCaps) {
-  Logger::info("D3D9Interface::GetDeviceCaps:");
-
   if (pCaps == nullptr)
     return D3DERR_INVALIDCALL;
 
@@ -222,7 +222,6 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::GetDeviceCaps(
 }
 
 HMONITOR STDMETHODCALLTYPE D3D9Interface::GetAdapterMonitor(UINT Adapter) {
-  Logger::info("D3D9Interface::GetAdapterMonitor:");
   return m_d3d8->GetAdapterMonitor(Adapter);
 }
 
@@ -233,8 +232,6 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CreateDevice(
         DWORD                  BehaviorFlags,
         D3DPRESENT_PARAMETERS* pPresentationParameters,
         IDirect3DDevice9**     ppReturnedDeviceInterface) {
-  Logger::info("D3D9Interface::CreateDevice:");
-
   if (ppReturnedDeviceInterface == nullptr)
     return D3DERR_INVALIDCALL;
 
@@ -249,7 +246,7 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CreateDevice(
     return hr;
   }
 
-  *ppReturnedDeviceInterface = ref(new D3D9Device(this, d3d8Device));
+  *ppReturnedDeviceInterface = ref(new D3D9Device(this, d3d8Device, *pPresentationParameters));
 
   return D3D_OK;
 }
@@ -259,23 +256,21 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::EnumAdapterModes(
         D3DFORMAT       Format,
         UINT            Mode,
         D3DDISPLAYMODE* pMode) {
-  Logger::info("D3D9Interface::EnumAdapterModes:");
-
-  Logger::debug("D3D9Interface::EnumAdapterModes: Mode:   " + std::to_string(Mode));
-  Logger::debug("D3D9Interface::EnumAdapterModes: Format: " + std::to_string(Format));
+  //Logger::debug("D3D9Interface::EnumAdapterModes: Mode:   " + std::to_string(Mode));
+  //Logger::debug("D3D9Interface::EnumAdapterModes: Format: " + std::to_string(Format));
 
   // D3D8 can only use two D3DFMT_X8R8G8B8 (22) and D3DFMT_R5G6B5 (23) as adapter formats
   switch (Format) {
     case D3DFMT_X8R8G8B8:
-      Logger::debug("D3D9Interface::GetAdapterModeCount: D3DFMT_X8R8G8B8: Width:  " + std::to_string(m_adapterModes[Adapter][0][Mode].Width));
-      Logger::debug("D3D9Interface::GetAdapterModeCount: D3DFMT_X8R8G8B8: Height: " + std::to_string(m_adapterModes[Adapter][0][Mode].Height));
-      Logger::debug("D3D9Interface::GetAdapterModeCount: D3DFMT_X8R8G8B8: Hz:     " + std::to_string(m_adapterModes[Adapter][0][Mode].RefreshRate));
+      //Logger::debug("D3D9Interface::GetAdapterModeCount: D3DFMT_X8R8G8B8: Width:  " + std::to_string(m_adapterModes[Adapter][0][Mode].Width));
+      //Logger::debug("D3D9Interface::GetAdapterModeCount: D3DFMT_X8R8G8B8: Height: " + std::to_string(m_adapterModes[Adapter][0][Mode].Height));
+      //Logger::debug("D3D9Interface::GetAdapterModeCount: D3DFMT_X8R8G8B8: Hz:     " + std::to_string(m_adapterModes[Adapter][0][Mode].RefreshRate));
       *pMode = m_adapterModes[Adapter][0][Mode];
       break;
     case D3DFMT_R5G6B5:
-      Logger::debug("D3D9Interface::GetAdapterModeCount: D3DFMT_R5G6B5: Width:  " + std::to_string(m_adapterModes[Adapter][1][Mode].Width));
-      Logger::debug("D3D9Interface::GetAdapterModeCount: D3DFMT_R5G6B5: Height: " + std::to_string(m_adapterModes[Adapter][1][Mode].Height));
-      Logger::debug("D3D9Interface::GetAdapterModeCount: D3DFMT_R5G6B5: Hz:     " + std::to_string(m_adapterModes[Adapter][1][Mode].RefreshRate));
+      //Logger::debug("D3D9Interface::GetAdapterModeCount: D3DFMT_R5G6B5: Width:  " + std::to_string(m_adapterModes[Adapter][1][Mode].Width));
+      //Logger::debug("D3D9Interface::GetAdapterModeCount: D3DFMT_R5G6B5: Height: " + std::to_string(m_adapterModes[Adapter][1][Mode].Height));
+      //Logger::debug("D3D9Interface::GetAdapterModeCount: D3DFMT_R5G6B5: Hz:     " + std::to_string(m_adapterModes[Adapter][1][Mode].RefreshRate));
       *pMode = m_adapterModes[Adapter][1][Mode];
       break;
     default:

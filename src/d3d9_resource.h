@@ -20,8 +20,6 @@ public:
   }
 
   HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) {
-    Logger::info("D3D9Resource::GetDevice:");
-
     if (ppDevice == nullptr)
       return D3DERR_INVALIDCALL;
 
@@ -35,7 +33,6 @@ public:
     const void*       pData,
           DWORD       SizeOfData,
           DWORD       Flags) final {
-    Logger::info("D3D9Resource::SetPrivateData:");
     return m_d3d8->SetPrivateData(refguid, pData, SizeOfData, Flags);
   }
 
@@ -43,27 +40,22 @@ public:
           REFGUID     refguid,
           void*       pData,
           DWORD*      pSizeOfData) final {
-    Logger::info("D3D9Resource::GetPrivateData:");
     return m_d3d8->GetPrivateData(refguid, pData, pSizeOfData);
   }
 
   HRESULT STDMETHODCALLTYPE FreePrivateData(REFGUID refguid) final {
-    Logger::info("D3D9Resource::FreePrivateData:");
     return m_d3d8->FreePrivateData(refguid);
   }
 
   DWORD STDMETHODCALLTYPE SetPriority(DWORD PriorityNew) {
-    Logger::info("D3D9Resource::SetPriority:");
     return m_d3d8->SetPriority(PriorityNew);
   }
 
   DWORD STDMETHODCALLTYPE GetPriority() {
-    Logger::info("D3D9Resource::GetPriority:");
     return m_d3d8->GetPriority();
   }
 
   void STDMETHODCALLTYPE PreLoad() {
-    Logger::info("D3D9Resource::PreLoad:");
     m_d3d8->PreLoad();
   }
 

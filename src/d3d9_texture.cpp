@@ -36,8 +36,6 @@ D3DRESOURCETYPE STDMETHODCALLTYPE D3D9Texture2D::GetType() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Texture2D::GetLevelDesc(UINT Level, D3DSURFACE_DESC *pDesc) {
-  Logger::info("D3D9Texture2D::GetLevelDesc:");
-
   if (pDesc == nullptr)
     return D3DERR_INVALIDCALL;
 
@@ -54,8 +52,6 @@ HRESULT STDMETHODCALLTYPE D3D9Texture2D::GetLevelDesc(UINT Level, D3DSURFACE_DES
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Texture2D::GetSurfaceLevel(UINT Level, IDirect3DSurface9** ppSurfaceLevel) {
-  Logger::info("D3D9Texture2D::GetSurfaceLevel:");
-
   if (ppSurfaceLevel == nullptr)
     return D3DERR_INVALIDCALL;
 
@@ -70,17 +66,14 @@ HRESULT STDMETHODCALLTYPE D3D9Texture2D::GetSurfaceLevel(UINT Level, IDirect3DSu
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Texture2D::LockRect(UINT Level, D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags) {
-  Logger::info("D3D9Texture2D::LockRect:");
   return m_d3d8->LockRect(Level, reinterpret_cast<d3d8::D3DLOCKED_RECT*>(pLockedRect), pRect, Flags);
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Texture2D::UnlockRect(UINT Level) {
-  Logger::info("D3D9Texture2D::UnlockRect:");
   return m_d3d8->UnlockRect(Level);
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Texture2D::AddDirtyRect(CONST RECT* pDirtyRect) {
-  Logger::info("D3D9Texture2D::AddDirtyRect:");
   return m_d3d8->AddDirtyRect(pDirtyRect);
 }
 
@@ -116,8 +109,6 @@ D3DRESOURCETYPE STDMETHODCALLTYPE D3D9TextureCube::GetType() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9TextureCube::GetLevelDesc(UINT Level, D3DSURFACE_DESC *pDesc) {
-  Logger::info("D3D9TextureCube::GetLevelDesc:");
-
   if (pDesc == nullptr)
     return D3DERR_INVALIDCALL;
 
@@ -137,8 +128,6 @@ HRESULT STDMETHODCALLTYPE D3D9TextureCube::GetCubeMapSurface(
     D3DCUBEMAP_FACES    Face,
     UINT                Level,
     IDirect3DSurface9** ppSurfaceLevel) {
-  Logger::info("D3D9TextureCube::GetCubeMapSurface:");
-
   if (ppSurfaceLevel == nullptr)
     return D3DERR_INVALIDCALL;
 
@@ -158,18 +147,15 @@ HRESULT STDMETHODCALLTYPE D3D9TextureCube::LockRect(
     D3DLOCKED_RECT* pLockedRect,
     const RECT* pRect,
     DWORD Flags) {
-  Logger::info("D3D9TextureCube::LockRect:");
   return m_d3d8->LockRect(d3d8::D3DCUBEMAP_FACES(Face), Level,
                           reinterpret_cast<d3d8::D3DLOCKED_RECT*>(pLockedRect), pRect, Flags);
 }
 
 HRESULT STDMETHODCALLTYPE D3D9TextureCube::UnlockRect(D3DCUBEMAP_FACES Face, UINT Level) {
-  Logger::info("D3D9TextureCube::UnlockRect:");
   return m_d3d8->UnlockRect(d3d8::D3DCUBEMAP_FACES(Face), Level);
 }
 
 HRESULT STDMETHODCALLTYPE D3D9TextureCube::AddDirtyRect(D3DCUBEMAP_FACES Face, CONST RECT* pDirtyRect) {
-  Logger::info("D3D9TextureCube::AddDirtyRect:");
   return m_d3d8->AddDirtyRect(d3d8::D3DCUBEMAP_FACES(Face), pDirtyRect);
 }
 
@@ -206,13 +192,10 @@ D3DRESOURCETYPE STDMETHODCALLTYPE D3D9Texture3D::GetType() {
 
 // The D3D9 and D3D8 D3DVOLUME_DESC structs are identical
 HRESULT STDMETHODCALLTYPE D3D9Texture3D::GetLevelDesc(UINT Level, D3DVOLUME_DESC *pDesc) {
-  Logger::info("D3D9Texture3D::GetLevelDesc:");
   return m_d3d8->GetLevelDesc(Level, reinterpret_cast<d3d8::D3DVOLUME_DESC*>(&pDesc));
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Texture3D::GetVolumeLevel(UINT Level, IDirect3DVolume9** ppSurfaceLevel) {
-  Logger::info("D3D9Texture3D::GetVolumeLevel:");
-
   if (ppSurfaceLevel == nullptr)
     return D3DERR_INVALIDCALL;
 
@@ -227,18 +210,15 @@ HRESULT STDMETHODCALLTYPE D3D9Texture3D::GetVolumeLevel(UINT Level, IDirect3DVol
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Texture3D::LockBox(UINT Level, D3DLOCKED_BOX* pLockedBox, CONST D3DBOX* pBox, DWORD Flags) {
-  Logger::info("D3D9Texture3D::LockBox:");
   return m_d3d8->LockBox(Level, reinterpret_cast<d3d8::D3DLOCKED_BOX*>(pLockedBox),
                          reinterpret_cast<CONST d3d8::D3DBOX*>(pBox), Flags);
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Texture3D::UnlockBox(UINT Level) {
-  Logger::info("D3D9Texture3D::UnlockBox:");
   return m_d3d8->UnlockBox(Level);
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Texture3D::AddDirtyBox(CONST D3DBOX* pDirtyBox) {
-  Logger::info("D3D9Texture3D::AddDirtyBox:");
   return m_d3d8->AddDirtyBox(reinterpret_cast<CONST d3d8::D3DBOX*>(pDirtyBox));
 }
 

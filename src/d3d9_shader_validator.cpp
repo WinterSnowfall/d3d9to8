@@ -1,8 +1,6 @@
 #include "d3d9_shader_validator.h"
 
 HRESULT STDMETHODCALLTYPE D3D9ShaderValidator::QueryInterface(REFIID riid, void** ppvObject) {
-  Logger::info("D3D9ShaderValidator::QueryInterface:");
-
   if (ppvObject == nullptr)
     return E_POINTER;
 

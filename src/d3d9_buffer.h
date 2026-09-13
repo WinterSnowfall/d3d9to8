@@ -31,7 +31,7 @@ public:
 
   HRESULT STDMETHODCALLTYPE Unlock();
 
-  d3d8::IDirect3DIndexBuffer8* GetD3D8IndexBuffer() {
+  d3d8::IDirect3DIndexBuffer8* GetD3D8IndexBuffer() const {
     return m_d3d8.ptr();
   }
 
@@ -65,7 +65,7 @@ public:
 
   HRESULT STDMETHODCALLTYPE Unlock();
 
-  d3d8::IDirect3DVertexBuffer8* GetD3D8VertexBuffer() {
+  d3d8::IDirect3DVertexBuffer8* GetD3D8VertexBuffer() const {
     return m_d3d8.ptr();
   }
 

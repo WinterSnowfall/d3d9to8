@@ -25,8 +25,6 @@ public:
   HRESULT STDMETHODCALLTYPE Apply() final;
 
   HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) {
-    Logger::info("D3D9StateBlock::GetDevice:");
-
     if (ppDevice == nullptr)
       return D3DERR_INVALIDCALL;
 

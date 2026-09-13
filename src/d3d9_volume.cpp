@@ -29,18 +29,15 @@ HRESULT STDMETHODCALLTYPE D3D9Volume::QueryInterface(REFIID riid, void** ppvObje
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Volume::GetDesc(D3DVOLUME_DESC *pDesc) {
-  Logger::info("D3D9Volume::GetDesc:");
   return m_d3d8->GetDesc(reinterpret_cast<d3d8::D3DVOLUME_DESC*>(&pDesc));
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Volume::LockBox(D3DLOCKED_BOX* pLockedBox, CONST D3DBOX* pBox, DWORD Flags) {
-  Logger::info("D3D9Volume::LockBox:");
   return m_d3d8->LockBox(reinterpret_cast<d3d8::D3DLOCKED_BOX*>(pLockedBox),
                           reinterpret_cast<CONST d3d8::D3DBOX*>(pBox), Flags);
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Volume::UnlockBox() {
-  Logger::info("D3D9Volume::UnlockBox:");
   return m_d3d8->UnlockBox();
 }
 

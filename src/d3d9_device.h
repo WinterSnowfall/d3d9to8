@@ -3,6 +3,8 @@
 #include "d3d9_include.h"
 #include "d3d9_com_object.h"
 #include "d3d9_logger.h"
+#include "d3d9_caps.h"
+#include "d3d9_options.h"
 
 #include "d3d9_buffer.h"
 #include "d3d9_surface.h"
@@ -11,12 +13,13 @@
 #include "d3d9_vertex_declaration.h"
 
 #include <array>
+#include <vector>
 
 class D3D9Device final : public ComObjectClamp<IDirect3DDevice9> {
 
 public:
 
-  D3D9Device(IDirect3D9* intf, d3d8::IDirect3DDevice8* d3d8Device);
+  D3D9Device(IDirect3D9* intf, d3d8::IDirect3DDevice8* d3d8Device, D3DPRESENT_PARAMETERS presentParams);
 
   ~D3D9Device();
 
@@ -450,30 +453,39 @@ public:
 
   HRESULT STDMETHODCALLTYPE CreateQuery(D3DQUERYTYPE Type, IDirect3DQuery9** ppQuery);
 
-  d3d8::IDirect3DDevice8* GetD3D8Device() {
+  d3d8::IDirect3DDevice8* GetD3D8Device() const {
     return m_d3d8.ptr();
+  }
+
+  const D3DPRESENT_PARAMETERS* GetPresentParameters() const {
+    return &m_presentParams;
   }
 
 private:
 
-  UINT                               m_baseVertexIndex = 0;
-  std::array<UINT, 16>               m_streamSourceStride;
+  UINT                                        m_baseVertexIndex = 0;
+  std::array<UINT, D3D9TO8_MAX_STREAMS>       m_streamSourceStride;
 
-  IDirect3D9*                        m_intf;
+  IDirect3D9*                                 m_intf;
 
-  ComObject<d3d8::IDirect3DDevice8>  m_d3d8;
+  ComObject<d3d8::IDirect3DDevice8>           m_d3d8;
 
-  ComObject<D3D9Surface, false>      m_rt;
-  ComObject<D3D9Surface, false>      m_ds;
+  D3DPRESENT_PARAMETERS                       m_presentParams;
 
-  ComObject<D3D9VertexShader, false> m_vs;
-  ComObject<D3D9PixelShader, false>  m_ps;
+  ComObject<D3D9Surface, false>               m_rt;
+  ComObject<D3D9Surface, false>               m_ds;
 
-  ComObject<D3D9VertexDecl, false>   m_vertexDecl;
+  std::vector<ComObject<D3D9Surface, false>>  m_backBuffers;
+  ComObject<D3D9Surface, false>               m_autoDepthStencil;
 
-  ComObject<D3D9IndexBuffer>         m_indices;
-  std::array<ComObject<D3D9VertexBuffer>, 16> m_streamSource;
+  ComObject<D3D9VertexShader, false>          m_vs;
+  ComObject<D3D9PixelShader, false>           m_ps;
 
-  std::array<ComObject<D3D9Texture2D, false>, 8> m_textures;
+  ComObject<D3D9VertexDecl, false>            m_vertexDecl;
+
+  ComObject<D3D9IndexBuffer>                  m_indices;
+  std::array<ComObject<D3D9VertexBuffer>, D3D9TO8_MAX_STREAMS> m_streamSource;
+
+  std::array<ComObject<D3D9Texture2D, false>, D3D9TO8_MAX_TEXTURE_STAGES> m_textures;
 
 };

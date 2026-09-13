@@ -50,12 +50,12 @@ DWORD STDMETHODCALLTYPE D3D9Query::GetDataSize() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Query::Issue(DWORD dwIssueFlags) {
-  Logger::info("D3D9Query::Issue: Stub!");
+  Logger::warn("D3D9Query::Issue: Stub!");
   return D3D_OK;
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Query::GetData(void* pData, DWORD dwSize, DWORD dwGetDataFlags) {
-  Logger::info("D3D9Query::GetData: Stub!");
+  Logger::warn("D3D9Query::GetData: Stub!");
 
   if (pData != nullptr)
     memset(pData, 0, dwSize);

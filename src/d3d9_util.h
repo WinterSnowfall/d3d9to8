@@ -28,9 +28,9 @@ inline void ConvertCaps9(const d3d8::D3DCAPS8& caps8, D3DCAPS9* pCaps9) {
                                  | D3DPMISCCAPS_FOGVERTEXCLAMPED
                                  | D3DPMISCCAPS_POSTBLENDSRGBCONVERT;
 
-  pCaps9->RasterCaps            |= D3DPRASTERCAPS_SCISSORTEST
-                                 | D3DPRASTERCAPS_SLOPESCALEDEPTHBIAS
+  pCaps9->RasterCaps            |= D3DPRASTERCAPS_SLOPESCALEDEPTHBIAS
                                  | D3DPRASTERCAPS_DEPTHBIAS
+                              // | D3DPRASTERCAPS_SCISSORTEST // There's no D3D8 equivalent
                                  | D3DPRASTERCAPS_MULTISAMPLE_TOGGLE;
 
   pCaps9->SrcBlendCaps          |= D3DPBLENDCAPS_BLENDFACTOR;
@@ -54,7 +54,7 @@ inline d3d8::D3DPRESENT_PARAMETERS ConvertPresentParameters8(D3DPRESENT_PARAMETE
   // A 0 back buffer count needs to be corrected and made visible to the D3D9 application as well
   pParams->BackBufferCount = std::max(pParams->BackBufferCount, 1u);
 
-  // In D3D8 D3DSWAPEFFECT_COPY can't be used with more than one back buffer
+  // In D3D8 D3DSWAPEFFECT_COPY(_VSYNC) can't be used with more than one back buffer
   if (pParams->SwapEffect == D3DSWAPEFFECT_COPY && pParams->BackBufferCount > 1)
     pParams->BackBufferCount = 1;
 
@@ -73,7 +73,15 @@ inline d3d8::D3DPRESENT_PARAMETERS ConvertPresentParameters8(D3DPRESENT_PARAMETE
   params.MultiSampleType = d3d8::D3DMULTISAMPLE_TYPE(pParams->MultiSampleType);
 
   Logger::debug("pParams->SwapEffect: " + std::to_string(pParams->SwapEffect));
-  params.SwapEffect = d3d8::D3DSWAPEFFECT(pParams->SwapEffect);
+  // Remap D3DSWAPEFFECT_COPY to D3DSWAPEFFECT_COPY_VSYNC in D3D8
+  // if any VSYNC specific D3DPRESENT_INTERVAL values are used
+  if (pParams->SwapEffect == D3DSWAPEFFECT_COPY &&
+      pParams->PresentationInterval != D3DPRESENT_INTERVAL_IMMEDIATE) {
+    params.SwapEffect = d3d8::D3DSWAPEFFECT_COPY_VSYNC;
+  } else {
+    params.SwapEffect = d3d8::D3DSWAPEFFECT(pParams->SwapEffect);
+  }
+
   //Logger::debug("pParams->hDeviceWindow: " + std::to_string(pParams->hDeviceWindow));
   params.hDeviceWindow = pParams->hDeviceWindow;
   Logger::debug("pParams->Windowed: " + std::to_string(pParams->Windowed));
@@ -88,10 +96,11 @@ inline d3d8::D3DPRESENT_PARAMETERS ConvertPresentParameters8(D3DPRESENT_PARAMETE
   Logger::debug("pParams->FullScreen_RefreshRateInHz: " + std::to_string(pParams->FullScreen_RefreshRateInHz));
   params.FullScreen_RefreshRateInHz = pParams->FullScreen_RefreshRateInHz;
 
-  // In D3D8 nothing except D3DPRESENT_INTERVAL_DEFAULT can be used as a flag for windowed presentation
   Logger::debug("pParams->PresentationInterval: " + std::to_string(pParams->PresentationInterval));
   UINT PresentationInterval = pParams->PresentationInterval;
+  // In D3D8 nothing except D3DPRESENT_INTERVAL_DEFAULT can be used as a flag for windowed presentation
   if (pParams->Windowed) {
+    Logger::warn("ConvertPresentParameters8: Forcing D3DPRESENT_INTERVAL_DEFAULT for windowed presentation");
     PresentationInterval = D3DPRESENT_INTERVAL_DEFAULT;
   }
   // FullScreen_PresentationInterval -> PresentationInterval
@@ -141,8 +150,14 @@ inline d3d8::D3DTEXTURESTAGESTATETYPE GetTextureStateType8(const D3DSAMPLERSTATE
 // are expected to work just fine in D3D9 for various purposes
 inline bool IsUnsupportedD3D9Format(const D3DFORMAT format) {
   return format == D3DFMT_A16B16G16R16
-      || format == D3DFMT_A16B16G16R16F; // Dawn of War: Definitive Edition requires it for cubemaps
-    //|| format == D3DFMT_A32B32G32R32F; // This isn't typically supported in D3D9 either actually
+      || format == D3DFMT_A16B16G16R16F // Dawn of War: Definitive Edition requires it for cubemaps
+      || format == D3DFMT_A32B32G32R32F;
+}
+
+// D3D8 doesn't support anything but these two formats as adapter formats
+inline bool IsSupportedD3D8AdapterFormat(const D3DFORMAT format) {
+  return format == D3DFMT_X8R8G8B8
+      || format == D3DFMT_R5G6B5;
 }
 
 template<typename T, typename J>

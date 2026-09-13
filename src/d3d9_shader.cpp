@@ -42,8 +42,6 @@ HRESULT STDMETHODCALLTYPE D3D9VertexShader::QueryInterface(REFIID riid, void** p
 }
 
 HRESULT STDMETHODCALLTYPE D3D9VertexShader::GetFunction(void* pOut, UINT* pSizeOfData) {
-  Logger::info("D3D9VertexShader::GetFunction:");
-
   if (pSizeOfData == nullptr)
     return D3DERR_INVALIDCALL;
 
@@ -97,8 +95,6 @@ HRESULT STDMETHODCALLTYPE D3D9PixelShader::QueryInterface(REFIID riid, void** pp
 }
 
 HRESULT STDMETHODCALLTYPE D3D9PixelShader::GetFunction(void* pOut, UINT* pSizeOfData) {
-  Logger::info("D3D9PixelShader::GetFunction:");
-
   if (pSizeOfData == nullptr)
     return D3DERR_INVALIDCALL;
 

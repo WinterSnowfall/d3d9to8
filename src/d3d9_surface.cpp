@@ -33,8 +33,6 @@ D3DRESOURCETYPE STDMETHODCALLTYPE D3D9Surface::GetType() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Surface::GetDesc(D3DSURFACE_DESC *pDesc) {
-  Logger::info("D3D9Surface::GetDesc:");
-
   if (pDesc == nullptr)
     return D3DERR_INVALIDCALL;
 
@@ -51,12 +49,10 @@ HRESULT STDMETHODCALLTYPE D3D9Surface::GetDesc(D3DSURFACE_DESC *pDesc) {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Surface::LockRect(D3DLOCKED_RECT* pLockedRect, CONST RECT* pRect, DWORD Flags) {
-  Logger::info("D3D9Surface::LockRect:");
   return m_d3d8->LockRect(reinterpret_cast<d3d8::D3DLOCKED_RECT*>(pLockedRect), pRect, Flags);
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Surface::UnlockRect() {
-  Logger::info("D3D9Surface::UnlockRect:");
   return m_d3d8->UnlockRect();
 }
 

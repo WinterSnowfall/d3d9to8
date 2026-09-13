@@ -32,8 +32,6 @@ HRESULT STDMETHODCALLTYPE D3D9StateBlock::QueryInterface(
 }
 
 HRESULT STDMETHODCALLTYPE D3D9StateBlock::Capture() {
-  Logger::info("D3D9StateBlock::Capture:");
-
   D3D9Device* d3d9Device = reinterpret_cast<D3D9Device*>(m_device);
 
   d3d9Device->GetD3D8Device()->CaptureStateBlock(m_handle);
@@ -42,8 +40,6 @@ HRESULT STDMETHODCALLTYPE D3D9StateBlock::Capture() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9StateBlock::Apply() {
-  Logger::info("D3D9StateBlock::Apply:");
-
   D3D9Device* d3d9Device = reinterpret_cast<D3D9Device*>(m_device);
 
   d3d9Device->GetD3D8Device()->ApplyStateBlock(m_handle);

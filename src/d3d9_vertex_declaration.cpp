@@ -1,6 +1,7 @@
 #include "d3d9_vertex_declaration.h"
 
-D3D9VertexDecl::D3D9VertexDecl(const D3DVERTEXELEMENT9* vertexElements) {
+D3D9VertexDecl::D3D9VertexDecl(IDirect3DDevice9* device, const D3DVERTEXELEMENT9* vertexElements)
+  : m_device ( device ) {
   const D3DVERTEXELEMENT9* ptr = vertexElements;
 
   if (ptr != nullptr) {
@@ -27,8 +28,6 @@ D3D9VertexDecl::~D3D9VertexDecl() {
 HRESULT STDMETHODCALLTYPE D3D9VertexDecl::QueryInterface(
         REFIID  riid,
         void** ppvObject) {
-  Logger::info("D3D9VertexDecl::QueryInterface:");
-
   if (ppvObject == nullptr)
     return E_POINTER;
 
@@ -48,8 +47,6 @@ HRESULT STDMETHODCALLTYPE D3D9VertexDecl::QueryInterface(
 HRESULT STDMETHODCALLTYPE D3D9VertexDecl::GetDeclaration(
         D3DVERTEXELEMENT9* pElement,
         UINT*              pNumElements) {
-  Logger::info("D3D9VertexDecl::GetDeclaration:");
-
   if (pNumElements == nullptr)
     return D3DERR_INVALIDCALL;
 

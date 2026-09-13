@@ -21,35 +21,38 @@ public:
   }
 
   void STDMETHODCALLTYPE GenerateMipSubLevels() final {
-    Logger::warn("D3D9BaseTexture::GenerateMipSubLevels: Stub!");
+    Logger::warn("D3D9BaseTexture::GenerateMipSubLevels: Unsupported call!");
   }
 
+  // This doesn't map to anything in D3D8, but let's at least save the value
   HRESULT STDMETHODCALLTYPE SetAutoGenFilterType(D3DTEXTUREFILTERTYPE FilterType) final {
-    Logger::warn("D3D9BaseTexture::SetAutoGenFilterType: Stub!");
+    Logger::warn("D3D9BaseTexture::SetAutoGenFilterType: Unsupported call!");
+
+    m_autoGenFilterType = FilterType;
+
     return D3D_OK;
   }
 
   D3DTEXTUREFILTERTYPE STDMETHODCALLTYPE GetAutoGenFilterType() final {
-    Logger::warn("D3D9BaseTexture::GetAutoGenFilterType: Stub!");
-    return D3DTEXTUREFILTERTYPE(0);
+    Logger::warn("D3D9BaseTexture::GetAutoGenFilterType: Unsupported call!");
+    return m_autoGenFilterType;
   }
 
   DWORD STDMETHODCALLTYPE SetLOD(DWORD LODNew) final {
-    Logger::warn("D3D9BaseTexture::SetLOD: Stub!");
-    return 0;
+    return m_d3d8->SetLOD(LODNew);
   }
 
   DWORD STDMETHODCALLTYPE GetLOD() final {
-    Logger::warn("D3D9BaseTexture::GetLOD: Stub!");
-    return 0;
+    return m_d3d8->GetLOD();
   }
 
   DWORD STDMETHODCALLTYPE GetLevelCount() final {
-    Logger::info("D3D9Texture2D::GetLevelCount:");
     return m_d3d8->GetLevelCount();
   }
 
 private:
+
+  D3DTEXTUREFILTERTYPE         m_autoGenFilterType = D3DTEXF_LINEAR;
 
   d3d8::IDirect3DBaseTexture8* m_d3d8 = nullptr;
 
@@ -77,7 +80,7 @@ public:
 
   HRESULT STDMETHODCALLTYPE AddDirtyRect(CONST RECT* pDirtyRect);
 
-  d3d8::IDirect3DTexture8* GetD3D8Texture() {
+  d3d8::IDirect3DTexture8* GetD3D8Texture() const {
     return m_d3d8.ptr();
   }
 
@@ -117,7 +120,7 @@ public:
 
   HRESULT STDMETHODCALLTYPE AddDirtyRect(D3DCUBEMAP_FACES Face, CONST RECT* pDirtyRect);
 
-  d3d8::IDirect3DCubeTexture8* GetD3D8CubeTexture() {
+  d3d8::IDirect3DCubeTexture8* GetD3D8CubeTexture() const {
     return m_d3d8.ptr();
   }
 
@@ -149,7 +152,7 @@ public:
 
   HRESULT STDMETHODCALLTYPE AddDirtyBox(CONST D3DBOX* pDirtyBox);
 
-  d3d8::IDirect3DVolumeTexture8* GetD3D8VolumeTexture() {
+  d3d8::IDirect3DVolumeTexture8* GetD3D8VolumeTexture() const {
     return m_d3d8.ptr();
   }
 

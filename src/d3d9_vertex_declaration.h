@@ -12,7 +12,7 @@ class D3D9VertexDecl final : public ComObjectClamp<IDirect3DVertexDeclaration9> 
 
 public:
 
-  D3D9VertexDecl(const D3DVERTEXELEMENT9* vertexElements);
+  D3D9VertexDecl(IDirect3DDevice9* device, const D3DVERTEXELEMENT9* vertexElements);
 
   ~D3D9VertexDecl();
 
@@ -25,11 +25,17 @@ public:
           UINT*              pNumElements);
 
   HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) {
-    Logger::warn("D3D9VertexDecl::GetDevice: Stub!");
+    if (ppDevice == nullptr)
+      return D3DERR_INVALIDCALL;
+
+    *ppDevice = m_device;
+
     return D3D_OK;
   }
 
 private:
+
+  IDirect3DDevice9* m_device = nullptr;
 
   std::vector<D3DVERTEXELEMENT9> m_vertexElements;
 

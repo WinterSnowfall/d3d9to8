@@ -21,8 +21,6 @@ public:
   HRESULT STDMETHODCALLTYPE GetFunction(void* pOut, UINT* pSizeOfData);
 
   HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) {
-    Logger::info("D3D9VertexShader::GetDevice:");
-
     if (ppDevice == nullptr)
       return D3DERR_INVALIDCALL;
 
@@ -31,8 +29,14 @@ public:
     return D3D_OK;
   }
 
-  DWORD GetD3D8VSHandle() {
+  DWORD GetD3D8VSHandle() const {
     return m_handle;
+  }
+
+  // We may need to swap the linked D3D8 shader due to
+  // an update on either the declaration or function
+  void UpdateD3D8VSHandle(DWORD handle) {
+    m_handle = handle;
   }
 
 private:
@@ -56,8 +60,6 @@ public:
   HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
 
   HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) {
-    Logger::info("D3D9PixelShader::GetDevice:");
-
     if (ppDevice == nullptr)
       return D3DERR_INVALIDCALL;
 
@@ -68,7 +70,7 @@ public:
 
   HRESULT STDMETHODCALLTYPE GetFunction(void* pOut, UINT* pSizeOfData);
 
-  DWORD GetD3D8PSHandle() {
+  DWORD GetD3D8PSHandle() const {
     return m_handle;
   }
 

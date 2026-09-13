@@ -34,7 +34,6 @@ D3DRESOURCETYPE STDMETHODCALLTYPE D3D9IndexBuffer::GetType() {
 
 HRESULT STDMETHODCALLTYPE D3D9IndexBuffer::GetDesc(
         D3DINDEXBUFFER_DESC* pDesc) {
-  Logger::info("D3D9IndexBuffer::GetDesc:");
   return m_d3d8->GetDesc(reinterpret_cast<d3d8::D3DINDEXBUFFER_DESC*>(pDesc));
 }
 
@@ -43,12 +42,10 @@ HRESULT STDMETHODCALLTYPE D3D9IndexBuffer::Lock(
         UINT   SizeToLock,
         void** ppbData,
         DWORD  Flags) {
-  Logger::info("D3D9IndexBuffer::Lock:");
   return m_d3d8->Lock(OffsetToLock, SizeToLock, reinterpret_cast<BYTE**>(ppbData), Flags);
 }
 
 HRESULT STDMETHODCALLTYPE D3D9IndexBuffer::Unlock() {
-  Logger::info("D3D9IndexBuffer::Unlock:");
   return m_d3d8->Unlock();
 }
 
@@ -86,7 +83,6 @@ D3DRESOURCETYPE STDMETHODCALLTYPE D3D9VertexBuffer::GetType() {
 
 HRESULT STDMETHODCALLTYPE D3D9VertexBuffer::GetDesc(
         D3DVERTEXBUFFER_DESC* pDesc) {
-  Logger::info("D3D9VertexBuffer::GetDesc:");
   return m_d3d8->GetDesc(reinterpret_cast<d3d8::D3DVERTEXBUFFER_DESC*>(pDesc));
 }
 
@@ -95,12 +91,10 @@ HRESULT STDMETHODCALLTYPE D3D9VertexBuffer::Lock(
         UINT   SizeToLock,
         void** ppbData,
         DWORD  Flags) {
-  Logger::info("D3D9VertexBuffer::Lock:");
   return m_d3d8->Lock(OffsetToLock, SizeToLock, reinterpret_cast<BYTE**>(ppbData), Flags);
 }
 
 HRESULT STDMETHODCALLTYPE D3D9VertexBuffer::Unlock() {
-  Logger::info("D3D9VertexBuffer::Unlock:");
   return m_d3d8->Unlock();
 }
 

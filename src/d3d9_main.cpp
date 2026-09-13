@@ -31,8 +31,6 @@ HMODULE GetD3D8Module() {
 extern "C" {
 
   DLLEXPORT IDirect3D9* __stdcall Direct3DCreate9(UINT nSDKVersion) {
-    Logger::info("Direct3DCreate9::");
-
     typedef d3d8::IDirect3D8* (__stdcall* Direct3DCreate8_t)(UINT nSDKVersion);
     static Direct3DCreate8_t Direct3DCreate8 = nullptr;
 
@@ -114,7 +112,6 @@ extern "C" {
   }
 
   DLLEXPORT void* __stdcall Direct3DShaderValidatorCreate9(void) {
-    Logger::info("Direct3DShaderValidatorCreate9::");
     return ref(new D3D9ShaderValidator());
   }
 
@@ -135,7 +132,7 @@ extern "C" {
         break;
       case DLL_PROCESS_ATTACH:
         Logger::initializeFile();
-        Logger::info("<<<<<<< LOADING D3D9TO8 <<<<<<<");
+        Logger::info(">>>>>>> LOADING D3D9TO8 >>>>>>>");
         break;
       case DLL_PROCESS_DETACH: {
         // Calling FreeLibrary on DLL_PROCESS_DETACH is technically discouraged,

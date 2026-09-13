@@ -1,25 +1,29 @@
 #include "d3d9_logger.h"
 
-std::mutex ThreadSafeLogger::s_logMutex;
-ThreadSafeLogger::LogLevel ThreadSafeLogger::s_level = ThreadSafeLogger::LogLevel::LOG_WARN;
-bool ThreadSafeLogger::s_useLogFile = false;
+ThreadSafeLogger::LogLevel ThreadSafeLogger::s_level = ThreadSafeLogger::LogLevel(D3D9TO8_LOG_LEVEL);
+bool ThreadSafeLogger::s_writeToLogFile = D3D9TO8_WRITE_TO_LOG_FILE;
 bool ThreadSafeLogger::s_fileInitialized = false;
+std::mutex ThreadSafeLogger::s_logMutex;
 
-std::string ThreadSafeLogger::getTimestamp() {
-  auto now = std::chrono::system_clock::now();
-  auto time = std::chrono::system_clock::to_time_t(now);
-  auto localTime = std::localtime(&time);
+static const std::string D3D9TO8_LOG_FILE_PATH = "d3d9to8.log";
 
+inline std::string ThreadSafeLogger::getTimestamp() {
+  time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
   std::ostringstream oss;
-  oss << std::put_time(localTime, "%Y-%m-%d %H:%M:%S");
+  oss << std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S");
   return oss.str();
 }
 
 void ThreadSafeLogger::initializeFile() {
-  if (s_useLogFile) {
+  if (s_writeToLogFile && !s_fileInitialized) {
     std::lock_guard<std::mutex> lock(s_logMutex);
-    if (!s_fileInitialized) {
-      std::ofstream file("d3d9to8.log", std::ios::trunc);
+
+    std::ifstream logFileCheck(D3D9TO8_LOG_FILE_PATH);
+    bool logFileExists = logFileCheck.good();
+    logFileCheck.close();
+
+    if (logFileExists) {
+      std::ofstream file(D3D9TO8_LOG_FILE_PATH, std::ios::trunc);
       file.close();
       s_fileInitialized = true;
     }
@@ -27,21 +31,15 @@ void ThreadSafeLogger::initializeFile() {
 }
 
 void ThreadSafeLogger::logWithLevel(LogLevel logLevel, const std::string& prefix, const std::string& message) {
-  if (logLevel < s_level) {
+  if (logLevel < s_level)
     return;
-  }
 
   std::lock_guard<std::mutex> lock(s_logMutex);
-
-  std::string timestamp = getTimestamp();
-  std::string logEntry = "[" + timestamp + "] [" + prefix + "] " + message;
-
-  // Output to console
+  std::string logEntry = "[" + getTimestamp() + "] [" + prefix + "] " + message;
   std::cout << logEntry << std::endl << std::flush;
 
-  // Output to file
-  if (s_useLogFile) {
-    std::ofstream file("d3d9to8.log", std::ios::app);
+  if (s_writeToLogFile) {
+    std::ofstream file(D3D9TO8_LOG_FILE_PATH, std::ios::app);
     if (file.is_open()) {
       file << logEntry << "\n";
       file.close();

@@ -25,8 +25,6 @@ public:
   HRESULT STDMETHODCALLTYPE GetData(void* pData, DWORD dwSize, DWORD dwGetDataFlags) final;
 
   HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) {
-    Logger::info("D3D9Query::GetDevice:");
-
     if (ppDevice == nullptr)
       return D3DERR_INVALIDCALL;
 
