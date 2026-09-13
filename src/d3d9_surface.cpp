@@ -2,9 +2,9 @@
 
 #include "d3d9_util.h"
 
-D3D9Surface::D3D9Surface(IDirect3DDevice9* device, d3d8::IDirect3DSurface8* d3d8Surface)
-  : D3D9Resource (device, reinterpret_cast<d3d8::IDirect3DResource8*>(d3d8Surface))
-  , m_d3d8 ( d3d8Surface ) {
+D3D9Surface::D3D9Surface(IDirect3DDevice9* device, ComObject<d3d8::IDirect3DSurface8>&& d3d8Surface)
+  : D3D9Resource (device, reinterpret_cast<d3d8::IDirect3DResource8*>(d3d8Surface.ptr()))
+  , m_d3d8 ( std::move(d3d8Surface) ) {
 }
 
 D3D9Surface::~D3D9Surface() {
@@ -17,8 +17,8 @@ HRESULT STDMETHODCALLTYPE D3D9Surface::QueryInterface(REFIID riid, void** ppvObj
   *ppvObject = nullptr;
 
   if (riid == __uuidof(IUnknown)
-    || riid == __uuidof(IDirect3DResource9)
-    || riid == __uuidof(IDirect3DSurface9)) {
+   || riid == __uuidof(IDirect3DResource9)
+   || riid == __uuidof(IDirect3DSurface9)) {
     *ppvObject = ref(this);
     return S_OK;
   }

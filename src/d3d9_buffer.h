@@ -11,7 +11,7 @@ class D3D9IndexBuffer : public D3D9Resource<IDirect3DIndexBuffer9> {
 
 public:
 
-  D3D9IndexBuffer(IDirect3DDevice9* device, d3d8::IDirect3DIndexBuffer8* d3d8IndexBuffer);
+  D3D9IndexBuffer(IDirect3DDevice9* device, ComObject<d3d8::IDirect3DIndexBuffer8>&& d3d8IndexBuffer);
 
   ~D3D9IndexBuffer();
 
@@ -45,7 +45,7 @@ class D3D9VertexBuffer : public D3D9Resource<IDirect3DVertexBuffer9> {
 
 public:
 
-  D3D9VertexBuffer(IDirect3DDevice9* device, d3d8::IDirect3DVertexBuffer8* d3d8VertexBuffer);
+  D3D9VertexBuffer(IDirect3DDevice9* device, ComObject<d3d8::IDirect3DVertexBuffer8>&& d3d8VertexBuffer);
 
   ~D3D9VertexBuffer();
 

@@ -7,13 +7,6 @@ std::mutex ThreadSafeLogger::s_logMutex;
 
 static const std::string D3D9TO8_LOG_FILE_PATH = "d3d9to8.log";
 
-inline std::string ThreadSafeLogger::getTimestamp() {
-  time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-  std::ostringstream oss;
-  oss << std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S");
-  return oss.str();
-}
-
 void ThreadSafeLogger::initializeFile() {
   if (s_writeToLogFile && !s_fileInitialized) {
     std::lock_guard<std::mutex> lock(s_logMutex);
@@ -35,7 +28,7 @@ void ThreadSafeLogger::logWithLevel(LogLevel logLevel, const std::string& prefix
     return;
 
   std::lock_guard<std::mutex> lock(s_logMutex);
-  std::string logEntry = "[" + getTimestamp() + "] [" + prefix + "] " + message;
+  std::string logEntry = prefix + message;
   std::cout << logEntry << std::endl << std::flush;
 
   if (s_writeToLogFile) {
@@ -48,15 +41,15 @@ void ThreadSafeLogger::logWithLevel(LogLevel logLevel, const std::string& prefix
 }
 
 void ThreadSafeLogger::debug(const std::string& message) {
-  logWithLevel(LogLevel::LOG_DEBUG, "DEBUG", message);
+  logWithLevel(LogLevel::LOG_DEBUG, "debug:  ", message);
 }
 
 void ThreadSafeLogger::info(const std::string& message) {
-  logWithLevel(LogLevel::LOG_INFO, "INFO", message);
+  logWithLevel(LogLevel::LOG_INFO, "info:  ", message);
 }
 
 void ThreadSafeLogger::warn(const std::string& message) {
-  logWithLevel(LogLevel::LOG_WARN, "WARN", message);
+  logWithLevel(LogLevel::LOG_WARN, "warn:  ", message);
 }
 
 void ThreadSafeLogger::warn(REFIID riid) {
@@ -68,5 +61,5 @@ void ThreadSafeLogger::warn(REFIID riid) {
 }
 
 void ThreadSafeLogger::err(const std::string& message) {
-  logWithLevel(LogLevel::LOG_ERROR, "ERROR", message);
+  logWithLevel(LogLevel::LOG_ERROR, "error:  ", message);
 }

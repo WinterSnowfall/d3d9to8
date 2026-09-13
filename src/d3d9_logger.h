@@ -6,9 +6,6 @@
 #include <string>
 #include <mutex>
 #include <fstream>
-#include <chrono>
-#include <iomanip>
-#include <sstream>
 #include <iostream>
 
 class ThreadSafeLogger {

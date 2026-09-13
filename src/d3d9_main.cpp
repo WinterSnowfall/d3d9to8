@@ -1,6 +1,8 @@
 #include "d3d9_include.h"
 
 #include "d3d9_logger.h"
+#include "d3d9_com_object.h"
+
 #include "d3d9_interface.h"
 #include "d3d9_shader_validator.h"
 
@@ -50,13 +52,13 @@ extern "C" {
       }
     }
 
-    d3d8::IDirect3D8* d3d8Intf = Direct3DCreate8(D3D_SDK_VERSION_D3D8);
+    ComObject<d3d8::IDirect3D8> d3d8Intf = Direct3DCreate8(D3D_SDK_VERSION_D3D8);
     if (d3d8Intf == nullptr) {
       Logger::err("Direct3DCreate9:: Failed to create a D3D8 interface!");
       return nullptr;
     }
 
-    return ref(new D3D9Interface(d3d8Intf));
+    return ref(new D3D9Interface(std::move(d3d8Intf)));
   }
 
   DLLEXPORT HRESULT __stdcall Direct3DCreate9Ex(UINT nSDKVersion, IDirect3D9Ex** ppDirect3D9Ex) {

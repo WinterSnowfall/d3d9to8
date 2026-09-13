@@ -10,7 +10,7 @@ class D3D9SwapChain final : public ComObjectClamp<IDirect3DSwapChain9> {
 
 public:
 
-  D3D9SwapChain(IDirect3DDevice9* device, d3d8::IDirect3DSwapChain8* swapChain8);
+  D3D9SwapChain(IDirect3DDevice9* device, ComObject<d3d8::IDirect3DSwapChain8>&& swapChain8);
 
   ~D3D9SwapChain();
 

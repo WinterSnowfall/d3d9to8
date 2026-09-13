@@ -4,16 +4,15 @@
 #include "d3d9_swapchain.h"
 #include "d3d9_query.h"
 #include "d3d9_stateblock.h"
-#include "d3d9_util.h"
 
 using Logger = ThreadSafeLogger;
 
-D3D9Device::D3D9Device(IDirect3D9* intf, d3d8::IDirect3DDevice8* d3d8Device, D3DPRESENT_PARAMETERS presentParams)
+D3D9Device::D3D9Device(IDirect3D9* intf, ComObject<d3d8::IDirect3DDevice8>&& d3d8Device, D3DPRESENT_PARAMETERS presentParams)
   : m_intf ( intf )
-  , m_d3d8 ( d3d8Device )
+  , m_d3d8 ( std::move(d3d8Device) )
   , m_presentParams ( presentParams ) {
-  // D3D8 will set this to 0.0f by default
-  m_d3d8->SetRenderState(d3d8::D3DRS_POINTSIZE_MIN, bitcast<DWORD>(1.0f));
+  ClearCachedD3D8Objects();
+  CacheD3D8ObjectsAndRestoreState();
 }
 
 D3D9Device::~D3D9Device() {
@@ -110,14 +109,14 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateAdditionalSwapChain(
 
   d3d8::D3DPRESENT_PARAMETERS params8 = ConvertPresentParameters8(pPresentationParameters);
 
-  d3d8::IDirect3DSwapChain8* d3d8SwapChain;
+  ComObject<d3d8::IDirect3DSwapChain8> d3d8SwapChain;
   HRESULT hr = m_d3d8->CreateAdditionalSwapChain(&params8, &d3d8SwapChain);
   if (FAILED(hr)) {
     Logger::warn("D3D9Device::CreateAdditionalSwapChain: Failed to create D3D8 swapchain");
     return hr;
   }
 
-  *ppSwapChain = ref(new D3D9SwapChain(this, d3d8SwapChain));
+  *ppSwapChain = ref(new D3D9SwapChain(this, std::move(d3d8SwapChain)));
 
   return D3D_OK;
 }
@@ -140,18 +139,9 @@ UINT STDMETHODCALLTYPE D3D9Device::GetNumberOfSwapChains() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::Reset(D3DPRESENT_PARAMETERS* pPresentationParameters) {
-  // The D3D8 device will track losable resources, so release any cached objects
-  m_rt = nullptr;
-  m_ds = nullptr;
-  for (auto& texture : m_textures)
-    texture = nullptr;
-  // Shaders, along with state blocks, aren't losable resources as far as D3D8 is concerned
-  //m_vs = nullptr;
-  //m_ps = nullptr;
-  //m_vertexDecl = nullptr
-  m_indices = nullptr;
-  for (auto& streamSource : m_streamSource)
-    streamSource = nullptr;
+  m_presentParams = *pPresentationParameters;
+
+  ClearCachedD3D8Objects();
 
   d3d8::D3DPRESENT_PARAMETERS params8 = ConvertPresentParameters8(pPresentationParameters);
 
@@ -163,10 +153,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::Reset(D3DPRESENT_PARAMETERS* pPresentation
     return hr;
   }
 
-  // D3D8 will set this to 0.0f by default
-  m_d3d8->SetRenderState(d3d8::D3DRS_POINTSIZE_MIN, bitcast<DWORD>(1.0f));
-
-  m_presentParams = *pPresentationParameters;
+  CacheD3D8ObjectsAndRestoreState();
 
   return D3D_OK;
 }
@@ -190,15 +177,19 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetBackBuffer(
   if (iSwapChain != 0)
     Logger::warn("D3D9Device::GetBackBuffer: Use of non-zero iSwapChain");
 
-  d3d8::IDirect3DSurface8* d3d8BackBuffer;
-  HRESULT hr = m_d3d8->GetBackBuffer(iBackBuffer, d3d8::D3DBACKBUFFER_TYPE(Type),
-                                     &d3d8BackBuffer);
-  if (FAILED(hr)) {
-    Logger::warn("D3D9Device::GetBackBuffer: Failed to get D3D8 back buffer");
-    return hr;
+  if (m_backBuffers[iBackBuffer] == nullptr || iBackBuffer >= m_backBuffers.size()) {
+    ComObject<d3d8::IDirect3DSurface8> d3d8BackBuffer;
+    HRESULT hr = m_d3d8->GetBackBuffer(iBackBuffer, d3d8::D3DBACKBUFFER_TYPE(Type),
+                                       &d3d8BackBuffer);
+    if (FAILED(hr)) {
+      Logger::warn("D3D9Device::GetBackBuffer: Failed to get D3D8 back buffer");
+      return hr;
+    }
+
+    m_backBuffers[iBackBuffer] = new D3D9Surface(this, std::move(d3d8BackBuffer));
   }
 
-  *ppBackBuffer = ref(new D3D9Surface(this, d3d8BackBuffer));
+  *ppBackBuffer = m_backBuffers[iBackBuffer].ref();
 
   return D3D_OK;
 }
@@ -254,7 +245,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateTexture(
   if (IsUnsupportedD3D9Format(Format))
     Logger::err("D3D9Device::CreateTexture: Use of unsupported format: " + std::to_string(Format));
 
-  d3d8::IDirect3DTexture8* d3d8Texture;
+  ComObject<d3d8::IDirect3DTexture8> d3d8Texture;
   HRESULT hr = m_d3d8->CreateTexture(Width, Height, Levels, Usage,
                                      d3d8::D3DFORMAT(Format), d3d8::D3DPOOL(Pool),
                                      &d3d8Texture);
@@ -263,7 +254,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateTexture(
     return hr;
   }
 
-  *ppTexture = ref(new D3D9Texture2D(this, d3d8Texture));
+  *ppTexture = ref(new D3D9Texture2D(this, std::move(d3d8Texture)));
 
   return D3D_OK;
 }
@@ -292,7 +283,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVolumeTexture(
   if (IsUnsupportedD3D9Format(Format))
     Logger::err("D3D9Device::CreateVolumeTexture: Use of unsupported format: " + std::to_string(Format));
 
-  d3d8::IDirect3DVolumeTexture8* d3d8VolumeTexture;
+  ComObject<d3d8::IDirect3DVolumeTexture8> d3d8VolumeTexture;
   HRESULT hr = m_d3d8->CreateVolumeTexture(Width, Height, Depth, Levels, Usage,
                                            d3d8::D3DFORMAT(Format), d3d8::D3DPOOL(Pool),
                                            &d3d8VolumeTexture);
@@ -301,7 +292,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVolumeTexture(
     return hr;
   }
 
-  *ppVolumeTexture = ref(new D3D9Texture3D(this, d3d8VolumeTexture));
+  *ppVolumeTexture = ref(new D3D9Texture3D(this, std::move(d3d8VolumeTexture)));
 
   return D3D_OK;
 }
@@ -326,7 +317,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateCubeTexture(
   if (IsUnsupportedD3D9Format(Format))
     Logger::err("D3D9Device::CreateCubeTexture: Use of unsupported format: " + std::to_string(Format));
 
-  d3d8::IDirect3DCubeTexture8* d3d8CubeTexture = nullptr;
+  ComObject<d3d8::IDirect3DCubeTexture8> d3d8CubeTexture = nullptr;
   HRESULT hr = m_d3d8->CreateCubeTexture(EdgeLength, Levels, Usage,
                                          d3d8::D3DFORMAT(Format), d3d8::D3DPOOL(Pool),
                                          &d3d8CubeTexture);
@@ -335,7 +326,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateCubeTexture(
     return hr;
   }
 
-  *ppCubeTexture = ref(new D3D9TextureCube(this, d3d8CubeTexture));
+  *ppCubeTexture = ref(new D3D9TextureCube(this, std::move(d3d8CubeTexture)));
 
   return D3D_OK;
 }
@@ -350,7 +341,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVertexBuffer(
   if (ppVertexBuffer == nullptr)
     return D3DERR_INVALIDCALL;
 
-  d3d8::IDirect3DVertexBuffer8* d3d8VertexBuffer;
+  ComObject<d3d8::IDirect3DVertexBuffer8> d3d8VertexBuffer;
   HRESULT hr = m_d3d8->CreateVertexBuffer(Length, Usage, FVF,
                                           d3d8::D3DPOOL(Pool),
                                           &d3d8VertexBuffer);
@@ -359,7 +350,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVertexBuffer(
     return hr;
   }
 
-  *ppVertexBuffer = ref(new D3D9VertexBuffer(this, d3d8VertexBuffer));
+  *ppVertexBuffer = ref(new D3D9VertexBuffer(this, std::move(d3d8VertexBuffer)));
 
   return D3D_OK;
 }
@@ -374,7 +365,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateIndexBuffer(
   if (ppIndexBuffer == nullptr)
     return D3DERR_INVALIDCALL;
 
-  d3d8::IDirect3DIndexBuffer8* d3d8IndexBuffer;
+  ComObject<d3d8::IDirect3DIndexBuffer8> d3d8IndexBuffer;
   HRESULT hr = m_d3d8->CreateIndexBuffer(Length, Usage,
                                          d3d8::D3DFORMAT(Format), d3d8::D3DPOOL(Pool),
                                          &d3d8IndexBuffer);
@@ -383,7 +374,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateIndexBuffer(
     return hr;
   }
 
-  *ppIndexBuffer = ref(new D3D9IndexBuffer(this, d3d8IndexBuffer));
+  *ppIndexBuffer = ref(new D3D9IndexBuffer(this, std::move(d3d8IndexBuffer)));
 
   return D3D_OK;
 }
@@ -403,7 +394,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateRenderTarget(
   if (IsUnsupportedD3D9Format(Format))
     Logger::err("D3D9Device::CreateRenderTarget: Use of unsupported format: " + std::to_string(Format));
 
-  d3d8::IDirect3DSurface8* d3d8RenderTarget;
+  ComObject<d3d8::IDirect3DSurface8> d3d8RenderTarget;
   HRESULT hr = m_d3d8->CreateRenderTarget(Width, Height,
                                           d3d8::D3DFORMAT(Format),
                                           d3d8::D3DMULTISAMPLE_TYPE(MultiSample),
@@ -413,7 +404,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateRenderTarget(
     return hr;
   }
 
-  *ppSurface = ref(new D3D9Surface(this, d3d8RenderTarget));
+  *ppSurface = ref(new D3D9Surface(this, std::move(d3d8RenderTarget)));
 
   return D3D_OK;
 }
@@ -433,7 +424,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateDepthStencilSurface(
   if (IsUnsupportedD3D9Format(Format))
     Logger::err("D3D9Device::CreateDepthStencilSurface: Use of unsupported format: " + std::to_string(Format));
 
-  d3d8::IDirect3DSurface8* d3d8DepthStencil;
+  ComObject<d3d8::IDirect3DSurface8> d3d8DepthStencil;
   HRESULT hr = m_d3d8->CreateDepthStencilSurface(Width, Height,
                                                  d3d8::D3DFORMAT(Format),
                                                  d3d8::D3DMULTISAMPLE_TYPE(MultiSample),
@@ -443,7 +434,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateDepthStencilSurface(
     return hr;
   }
 
-  *ppSurface = ref(new D3D9Surface(this, d3d8DepthStencil));
+  *ppSurface = ref(new D3D9Surface(this, std::move(d3d8DepthStencil)));
 
   return D3D_OK;
 }
@@ -561,7 +552,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateOffscreenPlainSurface(
   if (IsUnsupportedD3D9Format(Format))
     Logger::err("D3D9Device::CreateOffscreenPlainSurface: Use of unsupported format: " + std::to_string(Format));
 
-  d3d8::IDirect3DSurface8* d3d8OffscreenSurface;
+  ComObject<d3d8::IDirect3DSurface8> d3d8OffscreenSurface;
   HRESULT hr = m_d3d8->CreateImageSurface(Width, Height,
                                           d3d8::D3DFORMAT(Format),
                                           &d3d8OffscreenSurface);
@@ -570,7 +561,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateOffscreenPlainSurface(
     return hr;
   }
 
-  *ppSurface = ref(new D3D9Surface(this, d3d8OffscreenSurface));
+  *ppSurface = ref(new D3D9Surface(this, std::move(d3d8OffscreenSurface)));
 
   return D3D_OK;
 }
@@ -584,7 +575,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetRenderTarget(
   if (FAILED(hr))
     return hr;
 
-  m_rt = d3d9RenderTarget;
+  m_renderTarget = d3d9RenderTarget;
 
   return D3D_OK;
 }
@@ -595,19 +586,18 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetRenderTarget(
   if (ppRenderTarget == nullptr)
     return D3DERR_INVALIDCALL;
 
-  if (m_rt != nullptr) {
-    *ppRenderTarget = m_rt.ref();
-    return D3D_OK;
+  if (m_renderTarget == nullptr) {
+    ComObject<d3d8::IDirect3DSurface8> d3d8RenderTarget;
+    HRESULT hr = m_d3d8->GetRenderTarget(&d3d8RenderTarget);
+    if (FAILED(hr)) {
+      Logger::err("D3D9Device::GetRenderTarget: Failed to get D3D8 render target");
+      return hr;
+    }
+
+    m_renderTarget = new D3D9Surface(this, std::move(d3d8RenderTarget));
   }
 
-  d3d8::IDirect3DSurface8* d3d8RenderTarget;
-  HRESULT hr = m_d3d8->GetRenderTarget(&d3d8RenderTarget);
-  if (FAILED(hr)) {
-    Logger::err("D3D9Device::GetRenderTarget: Failed to get D3D8 render target");
-    return hr;
-  }
-
-  *ppRenderTarget = ref(new D3D9Surface(this, d3d8RenderTarget));
+  *ppRenderTarget = m_renderTarget.ref();
 
   return D3D_OK;
 }
@@ -621,7 +611,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetDepthStencilSurface(IDirect3DSurface9* 
     return hr;
   }
 
-  m_ds = d3d9DepthStencil;
+  m_depthStencil = d3d9DepthStencil;
 
   return D3D_OK;
 }
@@ -630,19 +620,18 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetDepthStencilSurface(IDirect3DSurface9**
   if (ppZStencilSurface == nullptr)
     return D3DERR_INVALIDCALL;
 
-  if (m_ds != nullptr) {
-    *ppZStencilSurface = m_ds.ref();
-    return D3D_OK;
+  if (m_depthStencil == nullptr) {
+    ComObject<d3d8::IDirect3DSurface8> d3d8ZStencilSurface;
+    HRESULT hr = m_d3d8->GetDepthStencilSurface(&d3d8ZStencilSurface);
+    if (FAILED(hr)) {
+      Logger::err("D3D9Device::GetDepthStencilSurface: Failed to get D3D8 depth stencil");
+      return hr;
+    }
+
+    m_depthStencil = new D3D9Surface(this, std::move(d3d8ZStencilSurface));
   }
 
-  d3d8::IDirect3DSurface8* d3d8ZStencilSurface;
-  HRESULT hr = m_d3d8->GetDepthStencilSurface(&d3d8ZStencilSurface);
-  if (FAILED(hr)) {
-    Logger::err("D3D9Device::GetDepthStencilSurface: Failed to get D3D8 depth stencil");
-    return hr;
-  }
-
-  *ppZStencilSurface = ref(new D3D9Surface(this, d3d8ZStencilSurface));
+  *ppZStencilSurface = m_depthStencil.ref();
 
   return D3D_OK;
 }
@@ -812,51 +801,20 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetTexture(DWORD Stage, IDirect3DBaseTextu
   if (ppTexture == nullptr)
     return D3DERR_INVALIDCALL;
 
-  if (m_textures[Stage] != nullptr) {
-    *ppTexture = m_textures[Stage].ref();
-    return D3D_OK;
-  }
-
-  d3d8::IDirect3DBaseTexture8* texture8;
-  HRESULT hr = m_d3d8->GetTexture(Stage, &texture8);
-  if (FAILED(hr)) {
-    Logger::err("D3D9Device::GetTexture: Failed to get D3D8 texture");
-    return hr;
-  }
-
-  if (texture8 != nullptr) {
-    const d3d8::D3DRESOURCETYPE textureType = texture8->GetType();
-
-    switch (textureType) {
-      case D3DRTYPE_TEXTURE: {
-        *ppTexture = ref(new D3D9Texture2D(this, reinterpret_cast<d3d8::IDirect3DTexture8*>(texture8)));
-        break;
-      }
-      case D3DRTYPE_CUBETEXTURE: {
-        *ppTexture = ref(new D3D9TextureCube(this, reinterpret_cast<d3d8::IDirect3DCubeTexture8*>(texture8)));
-        break;
-      }
-      case D3DRTYPE_VOLUMETEXTURE: {
-        *ppTexture = ref(new D3D9Texture3D(this, reinterpret_cast<d3d8::IDirect3DVolumeTexture8*>(texture8)));
-        break;
-      }
-      default:
-        return D3DERR_INVALIDCALL;
-    }
-  } else {
-    *ppTexture = nullptr;
-  }
+  *ppTexture = m_textures[Stage].ref();
 
   return D3D_OK;
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::SetTexture(DWORD Stage, IDirect3DBaseTexture9* pTexture) {
+  D3D9Texture2D* texture9 = reinterpret_cast<D3D9Texture2D*>(pTexture);
+
   if (pTexture != nullptr) {
     const D3DRESOURCETYPE textureType = pTexture->GetType();
 
     switch (textureType) {
       case D3DRTYPE_TEXTURE: {
-        D3D9Texture2D* texture9 = reinterpret_cast<D3D9Texture2D*>(pTexture);
+        // We make the assumption this is a 2D texture just for caching
 
         HRESULT hr = m_d3d8->SetTexture(Stage, texture9->GetD3D8Texture());
         if (FAILED(hr)) {
@@ -899,7 +857,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetTexture(DWORD Stage, IDirect3DBaseTextu
     }
   }
 
-  m_textures[Stage] = reinterpret_cast<D3D9Texture2D*>(pTexture);
+  m_textures[Stage] = texture9;
 
   return D3D_OK;
 }
@@ -1174,14 +1132,16 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexShader(IDirect3DVertexShader9* pS
     D3D9VertexShader* vertexShader9 = reinterpret_cast<D3D9VertexShader*>(pShader);
 
     HRESULT hr = m_d3d8->SetVertexShader(vertexShader9->GetD3D8VSHandle());
-    if (FAILED(hr))
+    if (FAILED(hr)) {
+      Logger::warn("D3D9Device::SetVertexShader: Failed to set D3D8 vertex shader");
       return hr;
+    }
 
   } else {
     m_d3d8->SetVertexShader(0);
   }
 
-  m_vs = reinterpret_cast<D3D9VertexShader*>(pShader);
+  m_vertexShader = vertexShader9;
 
   return D3D_OK;
 }
@@ -1190,7 +1150,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetVertexShader(IDirect3DVertexShader9** p
   if (ppShader == nullptr)
     return D3DERR_INVALIDCALL;
 
-  *ppShader = m_vs.ref();
+  *ppShader = m_vertexShader.ref();
 
   return D3D_OK;
 }
@@ -1367,13 +1327,15 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetPixelShader(IDirect3DPixelShader9* pSha
 
   if (pShader != nullptr) {
     HRESULT hr = m_d3d8->SetPixelShader(pixelShader9->GetD3D8PSHandle());
-    if (FAILED(hr))
+    if (FAILED(hr)) {
+      Logger::warn("D3D9Device::SetPixelShader: Failed to set D3D8 pixel shader");
       return hr;
+    }
   } else {
     m_d3d8->SetPixelShader(0);
   }
 
-  m_ps = pixelShader9;
+  m_pixelShader = pixelShader9;
 
   return D3D_OK;
 }
@@ -1382,7 +1344,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetPixelShader(IDirect3DPixelShader9** ppS
   if (ppShader == nullptr)
     return D3DERR_INVALIDCALL;
 
-  *ppShader = m_ps.ref();
+  *ppShader = m_pixelShader.ref();
 
   return D3D_OK;
 }

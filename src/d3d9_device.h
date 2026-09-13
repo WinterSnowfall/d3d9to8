@@ -5,6 +5,7 @@
 #include "d3d9_logger.h"
 #include "d3d9_caps.h"
 #include "d3d9_options.h"
+#include "d3d9_util.h"
 
 #include "d3d9_buffer.h"
 #include "d3d9_surface.h"
@@ -19,7 +20,7 @@ class D3D9Device final : public ComObjectClamp<IDirect3DDevice9> {
 
 public:
 
-  D3D9Device(IDirect3D9* intf, d3d8::IDirect3DDevice8* d3d8Device, D3DPRESENT_PARAMETERS presentParams);
+  D3D9Device(IDirect3D9* intf, ComObject<d3d8::IDirect3DDevice8>&& d3d8Device, D3DPRESENT_PARAMETERS presentParams);
 
   ~D3D9Device();
 
@@ -463,6 +464,52 @@ public:
 
 private:
 
+  // Shaders and state blocks aren't counted as losable resources
+  // by D3D8, but reset them anyway to remain consistent with D3D9
+  inline void ClearCachedD3D8Objects() {
+    m_presentParams.BackBufferCount = std::max(m_presentParams.BackBufferCount, 1u);
+
+    m_backBuffers.clear();
+    m_backBuffers.resize(m_presentParams.BackBufferCount);
+
+    m_renderTarget = nullptr;
+    m_depthStencil = nullptr;
+
+    m_autoDepthStencil = nullptr;
+
+    m_textures.fill(nullptr);
+
+    m_streamSource.fill(nullptr);
+    m_streamSourceStride.fill(0u);
+    m_indices = nullptr;
+
+    m_vertexShader = nullptr;
+    m_pixelShader = nullptr;
+    m_vertexDecl = nullptr;
+
+    m_baseVertexIndex = 0u;
+  }
+
+  inline void CacheD3D8ObjectsAndRestoreState() {
+    for (UINT i = 0; i < m_presentParams.BackBufferCount; i++) {
+      ComObject<d3d8::IDirect3DSurface8> backBuffer8;
+      m_d3d8->GetBackBuffer(i, d3d8::D3DBACKBUFFER_TYPE_MONO, &backBuffer8);
+      m_backBuffers[i] = new D3D9Surface(this, std::move(backBuffer8));
+    }
+
+    ComObject<d3d8::IDirect3DSurface8> autoDepthStencil8;
+    // This call will fail if the D3D8 device is created without
+    // the EnableAutoDepthStencil presentation parameter set to TRUE.
+    HRESULT hr = m_d3d8->GetDepthStencilSurface(&autoDepthStencil8);
+    m_autoDepthStencil = FAILED(hr) ? nullptr : new D3D9Surface(this, std::move(autoDepthStencil8));
+
+    m_renderTarget = m_backBuffers[0];
+    m_depthStencil = m_autoDepthStencil;
+
+    // D3D8 will set this to 0.0f by default
+    m_d3d8->SetRenderState(d3d8::D3DRS_POINTSIZE_MIN, bitcast<DWORD>(1.0f));
+  }
+
   UINT                                        m_baseVertexIndex = 0;
   std::array<UINT, D3D9TO8_MAX_STREAMS>       m_streamSourceStride;
 
@@ -472,14 +519,14 @@ private:
 
   D3DPRESENT_PARAMETERS                       m_presentParams;
 
-  ComObject<D3D9Surface, false>               m_rt;
-  ComObject<D3D9Surface, false>               m_ds;
+  ComObject<D3D9Surface, false>               m_renderTarget;
+  ComObject<D3D9Surface, false>               m_depthStencil;
 
   std::vector<ComObject<D3D9Surface, false>>  m_backBuffers;
   ComObject<D3D9Surface, false>               m_autoDepthStencil;
 
-  ComObject<D3D9VertexShader, false>          m_vs;
-  ComObject<D3D9PixelShader, false>           m_ps;
+  ComObject<D3D9VertexShader, false>          m_vertexShader;
+  ComObject<D3D9PixelShader, false>           m_pixelShader;
 
   ComObject<D3D9VertexDecl, false>            m_vertexDecl;
 

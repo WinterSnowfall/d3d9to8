@@ -11,7 +11,7 @@ class D3D9Volume final : public D3D9Resource<IDirect3DVolume9> {
 
 public:
 
-  D3D9Volume(IDirect3DDevice9* device, d3d8::IDirect3DVolume8* d3d8Volume);
+  D3D9Volume(IDirect3DDevice9* device, ComObject<d3d8::IDirect3DVolume8>&& d3d8Volume);
 
   ~D3D9Volume();
 

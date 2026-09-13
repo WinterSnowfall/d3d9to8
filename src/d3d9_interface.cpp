@@ -5,8 +5,8 @@
 
 using Logger = ThreadSafeLogger;
 
-D3D9Interface::D3D9Interface(d3d8::IDirect3D8* d3d8Intf)
-  : m_d3d8 (d3d8Intf) {
+D3D9Interface::D3D9Interface(ComObject<d3d8::IDirect3D8>&& d3d8Intf)
+  : m_d3d8 ( std::move(d3d8Intf) ) {
   const UINT adapterCount = m_d3d8->GetAdapterCount();
 
   m_adapterModeCounts.resize(adapterCount);
@@ -237,7 +237,7 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CreateDevice(
 
   d3d8::D3DPRESENT_PARAMETERS params8 = ConvertPresentParameters8(pPresentationParameters);
 
-  d3d8::IDirect3DDevice8* d3d8Device;
+  ComObject<d3d8::IDirect3DDevice8> d3d8Device;
   HRESULT hr = m_d3d8->CreateDevice(Adapter, static_cast<d3d8::D3DDEVTYPE>(DeviceType),
                                     hFocusWindow, BehaviorFlags, &params8,
                                     &d3d8Device);
@@ -246,7 +246,7 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CreateDevice(
     return hr;
   }
 
-  *ppReturnedDeviceInterface = ref(new D3D9Device(this, d3d8Device, *pPresentationParameters));
+  *ppReturnedDeviceInterface = ref(new D3D9Device(this, std::move(d3d8Device), *pPresentationParameters));
 
   return D3D_OK;
 }

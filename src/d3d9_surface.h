@@ -11,7 +11,7 @@ class D3D9Surface final : public D3D9Resource<IDirect3DSurface9> {
 
 public:
 
-  D3D9Surface(IDirect3DDevice9* device, d3d8::IDirect3DSurface8* d3d8Surface);
+  D3D9Surface(IDirect3DDevice9* device, ComObject<d3d8::IDirect3DSurface8>&& d3d8Surface);
 
   ~D3D9Surface();
 

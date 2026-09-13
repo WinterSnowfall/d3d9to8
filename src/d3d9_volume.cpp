@@ -3,9 +3,9 @@
 #include "d3d9_device.h"
 #include "d3d9_texture.h"
 
-D3D9Volume::D3D9Volume(IDirect3DDevice9* device, d3d8::IDirect3DVolume8* d3d8Volume)
-  : D3D9Resource(device, reinterpret_cast<d3d8::IDirect3DResource8*>(d3d8Volume))
-  , m_d3d8 ( d3d8Volume ) {
+D3D9Volume::D3D9Volume(IDirect3DDevice9* device, ComObject<d3d8::IDirect3DVolume8>&& d3d8Volume)
+  : D3D9Resource(device, reinterpret_cast<d3d8::IDirect3DResource8*>(d3d8Volume.ptr()))
+  , m_d3d8 ( std::move(d3d8Volume) ) {
 }
 
 D3D9Volume::~D3D9Volume() { }

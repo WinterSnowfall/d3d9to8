@@ -17,9 +17,15 @@ public:
   }
 
   ULONG STDMETHODCALLTYPE Release() {
-    ULONG refCount = --m_refCount;
-    if (!refCount)
-      ReleasePrivate();
+    ULONG refCount = this->m_refCount;
+    if (refCount != 0ul) {
+      this->m_refCount--;
+      refCount--;
+
+      if (refCount == 0ul)
+        this->ReleasePrivate();
+    }
+
     return refCount;
   }
 
@@ -121,6 +127,9 @@ public:
   T* operator -> () const {
     return m_ptr;
   }
+
+  T**       operator & ()       { return &m_ptr; }
+  T* const* operator & () const { return &m_ptr; }
 
   template<bool Public_>
   bool operator == (const ComObject<T, Public_>& other) const { return m_ptr == other.m_ptr; }

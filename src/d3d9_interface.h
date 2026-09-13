@@ -11,7 +11,7 @@ class D3D9Interface final : public ComObjectClamp<IDirect3D9> {
 
 public:
 
-  D3D9Interface(d3d8::IDirect3D8* d3d8Intf);
+  D3D9Interface(ComObject<d3d8::IDirect3D8>&& d3d8Intf);
 
   ~D3D9Interface();
 

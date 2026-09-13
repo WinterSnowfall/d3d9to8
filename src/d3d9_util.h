@@ -1,3 +1,5 @@
+#pragma once
+
 using Logger = ThreadSafeLogger;
 
 // (9<-8) D3DCAPSX: Writes to D3DCAPS9 from D3DCAPS8

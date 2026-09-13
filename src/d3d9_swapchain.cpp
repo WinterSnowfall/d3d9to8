@@ -2,9 +2,9 @@
 
 #include "d3d9_device.h"
 
-D3D9SwapChain::D3D9SwapChain(IDirect3DDevice9* device, d3d8::IDirect3DSwapChain8* swapChain8)
+D3D9SwapChain::D3D9SwapChain(IDirect3DDevice9* device, ComObject<d3d8::IDirect3DSwapChain8>&& swapChain8)
   : m_device ( device )
-  , m_d3d8 ( swapChain8 ) {
+  , m_d3d8 ( std::move(swapChain8) ) {
 }
 
 D3D9SwapChain::~D3D9SwapChain() {
@@ -69,14 +69,14 @@ HRESULT STDMETHODCALLTYPE D3D9SwapChain::GetBackBuffer(
   if (m_device != nullptr) {
     return m_device->GetBackBuffer(0, iBackBuffer, Type, ppBackBuffer);
   } else {
-    d3d8::IDirect3DSurface8* backBuffer8;
+    ComObject<d3d8::IDirect3DSurface8> backBuffer8;
     HRESULT hr = m_d3d8->GetBackBuffer(iBackBuffer, d3d8::D3DBACKBUFFER_TYPE(Type), &backBuffer8);
     if (FAILED(hr)) {
       Logger::warn("D3D9SwapChain::GetBackBuffer: Failed to get D3D8 back buffer");
       return hr;
     }
 
-    *ppBackBuffer = ref(new D3D9Surface(m_device, backBuffer8));
+    *ppBackBuffer = ref(new D3D9Surface(m_device, std::move(backBuffer8)));
   }
 
   return D3D_OK;

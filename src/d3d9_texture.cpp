@@ -4,9 +4,9 @@
 #include "d3d9_volume.h"
 #include "d3d9_util.h"
 
-D3D9Texture2D::D3D9Texture2D(IDirect3DDevice9* device, d3d8::IDirect3DTexture8* d3d8Texture)
-  : D3D9BaseTexture(device, reinterpret_cast<d3d8::IDirect3DBaseTexture8*>(d3d8Texture))
-  , m_d3d8( d3d8Texture ) {
+D3D9Texture2D::D3D9Texture2D(IDirect3DDevice9* device, ComObject<d3d8::IDirect3DTexture8>&& d3d8Texture)
+  : D3D9BaseTexture(device, reinterpret_cast<d3d8::IDirect3DBaseTexture8*>(d3d8Texture.ptr()))
+  , m_d3d8( std::move(d3d8Texture) ) {
 }
 
 D3D9Texture2D::~D3D9Texture2D() {
@@ -55,12 +55,14 @@ HRESULT STDMETHODCALLTYPE D3D9Texture2D::GetSurfaceLevel(UINT Level, IDirect3DSu
   if (ppSurfaceLevel == nullptr)
     return D3DERR_INVALIDCALL;
 
-  d3d8::IDirect3DSurface8* d3d8SurfaceLevel;
+  ComObject<d3d8::IDirect3DSurface8> d3d8SurfaceLevel;
   HRESULT hr = m_d3d8->GetSurfaceLevel(Level, &d3d8SurfaceLevel);
-  if (FAILED(hr))
+  if (FAILED(hr)) {
+    Logger::debug("D3D9Texture2D::GetSurfaceLevel: Failed to get D3D8 surface level");
     return hr;
+  }
 
-  *ppSurfaceLevel = ref(new D3D9Surface(m_device, d3d8SurfaceLevel));
+  *ppSurfaceLevel = ref(new D3D9Surface(m_device, std::move(d3d8SurfaceLevel)));
 
   return D3D_OK;
 }
@@ -77,9 +79,9 @@ HRESULT STDMETHODCALLTYPE D3D9Texture2D::AddDirtyRect(CONST RECT* pDirtyRect) {
   return m_d3d8->AddDirtyRect(pDirtyRect);
 }
 
-D3D9TextureCube::D3D9TextureCube(IDirect3DDevice9* device, d3d8::IDirect3DCubeTexture8* d3d8CubeTexture)
-  : D3D9BaseTexture(device, reinterpret_cast<d3d8::IDirect3DBaseTexture8*>(d3d8CubeTexture))
-  , m_d3d8( d3d8CubeTexture ) {
+D3D9TextureCube::D3D9TextureCube(IDirect3DDevice9* device, ComObject<d3d8::IDirect3DCubeTexture8>&& d3d8CubeTexture)
+  : D3D9BaseTexture(device, reinterpret_cast<d3d8::IDirect3DBaseTexture8*>(d3d8CubeTexture.ptr()))
+  , m_d3d8( std::move(d3d8CubeTexture) ) {
 }
 
 D3D9TextureCube::~D3D9TextureCube() {
@@ -131,12 +133,12 @@ HRESULT STDMETHODCALLTYPE D3D9TextureCube::GetCubeMapSurface(
   if (ppSurfaceLevel == nullptr)
     return D3DERR_INVALIDCALL;
 
-  d3d8::IDirect3DSurface8* d3d8SurfaceLevel;
+  ComObject<d3d8::IDirect3DSurface8> d3d8SurfaceLevel;
   HRESULT hr = m_d3d8->GetCubeMapSurface(d3d8::D3DCUBEMAP_FACES(Face), Level, &d3d8SurfaceLevel);
   if (FAILED(hr))
     return hr;
 
-  *ppSurfaceLevel = ref(new D3D9Surface(m_device, d3d8SurfaceLevel));
+  *ppSurfaceLevel = ref(new D3D9Surface(m_device, std::move(d3d8SurfaceLevel)));
 
   return D3D_OK;
 }
@@ -159,9 +161,9 @@ HRESULT STDMETHODCALLTYPE D3D9TextureCube::AddDirtyRect(D3DCUBEMAP_FACES Face, C
   return m_d3d8->AddDirtyRect(d3d8::D3DCUBEMAP_FACES(Face), pDirtyRect);
 }
 
-D3D9Texture3D::D3D9Texture3D(IDirect3DDevice9* device, d3d8::IDirect3DVolumeTexture8* d3d8VolumeTexture)
-  : D3D9BaseTexture(device, reinterpret_cast<d3d8::IDirect3DBaseTexture8*>(d3d8VolumeTexture))
-  , m_d3d8( d3d8VolumeTexture ) {
+D3D9Texture3D::D3D9Texture3D(IDirect3DDevice9* device, ComObject<d3d8::IDirect3DVolumeTexture8>&& d3d8VolumeTexture)
+  : D3D9BaseTexture(device, reinterpret_cast<d3d8::IDirect3DBaseTexture8*>(d3d8VolumeTexture.ptr()))
+  , m_d3d8( std::move(d3d8VolumeTexture) ) {
 }
 
 D3D9Texture3D::~D3D9Texture3D() {
@@ -199,12 +201,14 @@ HRESULT STDMETHODCALLTYPE D3D9Texture3D::GetVolumeLevel(UINT Level, IDirect3DVol
   if (ppSurfaceLevel == nullptr)
     return D3DERR_INVALIDCALL;
 
-  d3d8::IDirect3DVolume8* d3d8VolumeLevel;
+  ComObject<d3d8::IDirect3DVolume8> d3d8VolumeLevel;
   HRESULT hr = m_d3d8->GetVolumeLevel(Level, &d3d8VolumeLevel);
-  if (FAILED(hr))
+  if (FAILED(hr)) {
+    Logger::debug("D3D9Texture2D::GetVolumeLevel: Failed to get D3D8 volume level");
     return hr;
+  }
 
-  *ppSurfaceLevel = ref(new D3D9Volume(m_device, d3d8VolumeLevel));
+  *ppSurfaceLevel = ref(new D3D9Volume(m_device, std::move(d3d8VolumeLevel)));
 
   return D3D_OK;
 }

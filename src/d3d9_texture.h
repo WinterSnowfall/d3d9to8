@@ -62,7 +62,7 @@ class D3D9Texture2D : public D3D9BaseTexture<IDirect3DTexture9> {
 
 public:
 
-  D3D9Texture2D(IDirect3DDevice9* device, d3d8::IDirect3DTexture8* d3d8Texture);
+  D3D9Texture2D(IDirect3DDevice9* device, ComObject<d3d8::IDirect3DTexture8>&& d3d8Texture);
 
   ~D3D9Texture2D();
 
@@ -94,7 +94,7 @@ class D3D9TextureCube : public D3D9BaseTexture<IDirect3DCubeTexture9> {
 
 public:
 
-  D3D9TextureCube(IDirect3DDevice9* device, d3d8::IDirect3DCubeTexture8* d3d8CubeTexture);
+  D3D9TextureCube(IDirect3DDevice9* device, ComObject<d3d8::IDirect3DCubeTexture8>&& d3d8CubeTexture);
 
   ~D3D9TextureCube();
 
@@ -134,7 +134,7 @@ class D3D9Texture3D : public D3D9BaseTexture<IDirect3DVolumeTexture9> {
 
 public:
 
-  D3D9Texture3D(IDirect3DDevice9* device, d3d8::IDirect3DVolumeTexture8* d3d8VolumeTexture);
+  D3D9Texture3D(IDirect3DDevice9* device, ComObject<d3d8::IDirect3DVolumeTexture8>&& d3d8VolumeTexture);
 
   ~D3D9Texture3D();
 

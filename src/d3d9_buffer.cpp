@@ -1,8 +1,8 @@
 #include "d3d9_buffer.h"
 
-D3D9IndexBuffer::D3D9IndexBuffer(IDirect3DDevice9* device, d3d8::IDirect3DIndexBuffer8* d3d8IndexBuffer)
-  : D3D9Resource(device, reinterpret_cast<d3d8::IDirect3DResource8*>(d3d8IndexBuffer))
-  , m_d3d8 ( d3d8IndexBuffer ) {
+D3D9IndexBuffer::D3D9IndexBuffer(IDirect3DDevice9* device, ComObject<d3d8::IDirect3DIndexBuffer8>&& d3d8IndexBuffer)
+  : D3D9Resource(device, reinterpret_cast<d3d8::IDirect3DResource8*>(d3d8IndexBuffer.ptr()))
+  , m_d3d8 ( std::move(d3d8IndexBuffer) ) {
 }
 
 D3D9IndexBuffer::~D3D9IndexBuffer() {
@@ -49,9 +49,9 @@ HRESULT STDMETHODCALLTYPE D3D9IndexBuffer::Unlock() {
   return m_d3d8->Unlock();
 }
 
-D3D9VertexBuffer::D3D9VertexBuffer(IDirect3DDevice9* device, d3d8::IDirect3DVertexBuffer8* d3d8VertexBuffer)
-  : D3D9Resource(device, reinterpret_cast<d3d8::IDirect3DResource8*>(d3d8VertexBuffer))
-  , m_d3d8 ( d3d8VertexBuffer ) {
+D3D9VertexBuffer::D3D9VertexBuffer(IDirect3DDevice9* device, ComObject<d3d8::IDirect3DVertexBuffer8>&& d3d8VertexBuffer)
+  : D3D9Resource(device, reinterpret_cast<d3d8::IDirect3DResource8*>(d3d8VertexBuffer.ptr()))
+  , m_d3d8 ( std::move(d3d8VertexBuffer) ) {
 }
 
 D3D9VertexBuffer::~D3D9VertexBuffer() {
