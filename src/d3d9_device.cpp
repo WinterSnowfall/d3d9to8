@@ -125,7 +125,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateAdditionalSwapChain(
     return hr;
   }
 
-  *ppSwapChain = ref(new D3D9SwapChain(this, std::move(d3d8SwapChain)));
+  *ppSwapChain = ref(new D3D9SwapChain(this, std::move(d3d8SwapChain), pPresentationParameters));
 
   return D3D_OK;
 }
@@ -136,11 +136,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetSwapChain(UINT iSwapChain, IDirect3DSwa
 
   ClearReturnPointer(pSwapChain);
 
-  // TODO: Emulate the implicit swapchain by forwarding (some?) calls to the device
   if (iSwapChain == 0)
-    Logger::warn("D3D9Device::GetSwapChain: Unsupported query for the implicit swapchain");
+    Logger::debug("D3D9Device::GetSwapChain: Unsupported query for the implicit swapchain");
 
-  *pSwapChain = ref(new D3D9SwapChain(this, nullptr));
+  *pSwapChain = ref(new D3D9SwapChain(this, nullptr, nullptr));
 
   return D3D_OK;
 }
@@ -821,9 +820,11 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetClipPlane(DWORD Index, float* pPlane) {
 HRESULT STDMETHODCALLTYPE D3D9Device::SetRenderState(D3DRENDERSTATETYPE State, DWORD Value) {
   d3d8::D3DRENDERSTATETYPE State8 = d3d8::D3DRENDERSTATETYPE(State);
 
-  // TODO: Check and warn for unsupported render states
   switch (State) {
     default:
+      // Render states above D3DRS_NORMALORDER/D3DRS_NORMALDEGREE (173) don't exist in D3D8
+      if (State > D3DRS_NORMALDEGREE && Value != 0)
+        Logger::warn("D3D9Device::SetRenderState: Use of unsupported render state: " + std::to_string(State));
       break;
 
     case D3DRS_DEPTHBIAS: {
@@ -853,9 +854,11 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetRenderState(D3DRENDERSTATETYPE State, D
 
   d3d8::D3DRENDERSTATETYPE State8 = d3d8::D3DRENDERSTATETYPE(State);
 
-  // TODO: Check and return 0 for unsupported render states
   switch (State) {
     default:
+      // Render states above D3DRS_NORMALORDER/D3DRS_NORMALDEGREE (173) don't exist in D3D8
+      if (State > D3DRS_NORMALDEGREE)
+        Logger::warn("D3D9Device::GetRenderState: Use of unsupported render state: " + std::to_string(State));
       break;
 
     case D3DRS_DEPTHBIAS: {

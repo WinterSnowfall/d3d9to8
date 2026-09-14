@@ -10,7 +10,10 @@ class D3D9SwapChain final : public ComObjectClamp<IDirect3DSwapChain9> {
 
 public:
 
-  D3D9SwapChain(IDirect3DDevice9* device, ComObject<d3d8::IDirect3DSwapChain8>&& swapChain8);
+  D3D9SwapChain(
+      IDirect3DDevice9* device,
+      ComObject<d3d8::IDirect3DSwapChain8>&& swapChain8,
+      D3DPRESENT_PARAMETERS* pPresentationParameters);
 
   ~D3D9SwapChain();
 
@@ -51,8 +54,10 @@ public:
 
 private:
 
-  IDirect3DDevice9* m_device = nullptr;
+  IDirect3DDevice9*                    m_device = nullptr;
 
   ComObject<d3d8::IDirect3DSwapChain8> m_d3d8;
+
+  D3DPRESENT_PARAMETERS                m_presentParams = { };
 
 };

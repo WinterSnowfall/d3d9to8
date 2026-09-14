@@ -35,7 +35,7 @@ public:
 
 private:
 
-  IDirect3DDevice9* m_device = nullptr;
+  IDirect3DDevice9*              m_device = nullptr;
 
   std::vector<D3DVERTEXELEMENT9> m_vertexElements;
 

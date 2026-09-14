@@ -2,9 +2,14 @@
 
 #include "d3d9_device.h"
 
-D3D9SwapChain::D3D9SwapChain(IDirect3DDevice9* device, ComObject<d3d8::IDirect3DSwapChain8>&& swapChain8)
+D3D9SwapChain::D3D9SwapChain(
+    IDirect3DDevice9* device,
+    ComObject<d3d8::IDirect3DSwapChain8>&& swapChain8,
+    D3DPRESENT_PARAMETERS* pPresentationParameters)
   : m_device ( device )
   , m_d3d8 ( std::move(swapChain8) ) {
+  if (pPresentationParameters != nullptr)
+    m_presentParams = *pPresentationParameters;
 }
 
 D3D9SwapChain::~D3D9SwapChain() {
@@ -98,10 +103,16 @@ HRESULT STDMETHODCALLTYPE D3D9SwapChain::GetRasterStatus(D3DRASTER_STATUS* pRast
 }
 
 HRESULT STDMETHODCALLTYPE D3D9SwapChain::GetDisplayMode(D3DDISPLAYMODE* pMode) {
+  if (pMode == nullptr)
+    return D3DERR_INVALIDCALL;
+
   if (m_device != nullptr)
     return m_device->GetDisplayMode(0, pMode);
 
   Logger::warn("D3D9SwapChain::GetDisplayMode: Unsupported call!");
+
+  D3DDISPLAYMODE displayMode = { };
+  *pMode = displayMode;
 
   return D3D_OK;
 }
@@ -110,10 +121,11 @@ HRESULT STDMETHODCALLTYPE D3D9SwapChain::GetPresentParameters(D3DPRESENT_PARAMET
   if (pPresentationParameters == nullptr)
     return D3DERR_INVALIDCALL;
 
-  // TODO: Save them on the swapchain as well in case of non-implicit swapchain use
   if (m_device != nullptr) {
     D3D9Device* d3d9Device = reinterpret_cast<D3D9Device*>(m_device);
     *pPresentationParameters = *d3d9Device->GetPresentParameters();
+  } else {
+    *pPresentationParameters = m_presentParams;
   }
 
   return D3D_OK;

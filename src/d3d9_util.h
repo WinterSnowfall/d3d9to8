@@ -143,20 +143,19 @@ inline d3d8::D3DPRESENT_PARAMETERS ConvertPresentParameters8(D3DPRESENT_PARAMETE
     pParams->BackBufferCount = 1;
 
   d3d8::D3DPRESENT_PARAMETERS params;
-  // TODO: Check why we apparently get crap data in BackBufferWidth/BackBufferHeight
-  Logger::debug("pParams->BackBufferWidth: " + std::to_string(pParams->BackBufferWidth));
+  //Logger::debug("pParams->BackBufferWidth: " + std::to_string(pParams->BackBufferWidth));
   params.BackBufferWidth = pParams->BackBufferWidth;
-  Logger::debug("pParams->BackBufferHeight: " + std::to_string(pParams->BackBufferHeight));
+  //Logger::debug("pParams->BackBufferHeight: " + std::to_string(pParams->BackBufferHeight));
   params.BackBufferHeight = pParams->BackBufferHeight;
-  Logger::debug("pParams->BackBufferFormat: " + std::to_string(pParams->BackBufferFormat));
+  //Logger::debug("pParams->BackBufferFormat: " + std::to_string(pParams->BackBufferFormat));
   params.BackBufferFormat = d3d8::D3DFORMAT(pParams->BackBufferFormat);
-  Logger::debug("pParams->BackBufferCount: " + std::to_string(pParams->BackBufferCount));
+  //Logger::debug("pParams->BackBufferCount: " + std::to_string(pParams->BackBufferCount));
   params.BackBufferCount = pParams->BackBufferCount;
 
-  Logger::debug("pParams->MultiSampleType: " + std::to_string(pParams->MultiSampleType));
+  //Logger::debug("pParams->MultiSampleType: " + std::to_string(pParams->MultiSampleType));
   params.MultiSampleType = d3d8::D3DMULTISAMPLE_TYPE(pParams->MultiSampleType);
 
-  Logger::debug("pParams->SwapEffect: " + std::to_string(pParams->SwapEffect));
+  //Logger::debug("pParams->SwapEffect: " + std::to_string(pParams->SwapEffect));
   // Remap D3DSWAPEFFECT_COPY to D3DSWAPEFFECT_COPY_VSYNC in D3D8
   // if any VSYNC specific D3DPRESENT_INTERVAL values are used
   if (pParams->SwapEffect == D3DSWAPEFFECT_COPY &&
@@ -168,19 +167,19 @@ inline d3d8::D3DPRESENT_PARAMETERS ConvertPresentParameters8(D3DPRESENT_PARAMETE
 
   //Logger::debug("pParams->hDeviceWindow: " + std::to_string(pParams->hDeviceWindow));
   params.hDeviceWindow = pParams->hDeviceWindow;
-  Logger::debug("pParams->Windowed: " + std::to_string(pParams->Windowed));
+  //Logger::debug("pParams->Windowed: " + std::to_string(pParams->Windowed));
   params.Windowed = pParams->Windowed;
-  Logger::debug("pParams->EnableAutoDepthStencil: " + std::to_string(pParams->EnableAutoDepthStencil));
+  //Logger::debug("pParams->EnableAutoDepthStencil: " + std::to_string(pParams->EnableAutoDepthStencil));
   params.EnableAutoDepthStencil = pParams->EnableAutoDepthStencil;
-  Logger::debug("pParams->AutoDepthStencilFormat: " + std::to_string(pParams->AutoDepthStencilFormat));
+  //Logger::debug("pParams->AutoDepthStencilFormat: " + std::to_string(pParams->AutoDepthStencilFormat));
   params.AutoDepthStencilFormat = d3d8::D3DFORMAT(pParams->AutoDepthStencilFormat);
-  Logger::debug("pParams->Flags: " + std::to_string(pParams->Flags));
+  //Logger::debug("pParams->Flags: " + std::to_string(pParams->Flags));
   params.Flags = pParams->Flags;
 
-  Logger::debug("pParams->FullScreen_RefreshRateInHz: " + std::to_string(pParams->FullScreen_RefreshRateInHz));
+  //Logger::debug("pParams->FullScreen_RefreshRateInHz: " + std::to_string(pParams->FullScreen_RefreshRateInHz));
   params.FullScreen_RefreshRateInHz = pParams->FullScreen_RefreshRateInHz;
 
-  Logger::debug("pParams->PresentationInterval: " + std::to_string(pParams->PresentationInterval));
+  //Logger::debug("pParams->PresentationInterval: " + std::to_string(pParams->PresentationInterval));
   UINT PresentationInterval = pParams->PresentationInterval;
   // In D3D8 nothing except D3DPRESENT_INTERVAL_DEFAULT can be used as a flag for windowed presentation
   if (pParams->Windowed) {
