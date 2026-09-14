@@ -3,9 +3,13 @@
 #include "d3d9_device.h"
 #include "d3d9_texture.h"
 
-D3D9Volume::D3D9Volume(IDirect3DDevice9* device, ComObject<d3d8::IDirect3DVolume8>&& d3d8Volume)
+D3D9Volume::D3D9Volume(
+    IDirect3DDevice9* device,
+    ComObject<d3d8::IDirect3DVolume8>&& d3d8Volume,
+    IUnknown* container)
   : D3D9Resource(device, reinterpret_cast<d3d8::IDirect3DResource8*>(d3d8Volume.ptr()))
-  , m_d3d8 ( std::move(d3d8Volume) ) {
+  , m_d3d8 ( std::move(d3d8Volume) )
+  , m_container ( container ) {
 }
 
 D3D9Volume::~D3D9Volume() { }
@@ -42,7 +46,9 @@ HRESULT STDMETHODCALLTYPE D3D9Volume::UnlockBox() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Volume::GetContainer(REFIID riid, void** ppContainer) {
-  Logger::warn("D3D9Volume::GetContainer: Stub!");
-  return D3D_OK;
+  if (m_container != nullptr)
+    return m_container->QueryInterface(riid, ppContainer);
+
+  return m_device->QueryInterface(riid, ppContainer);
 }
 

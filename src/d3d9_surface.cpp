@@ -2,9 +2,13 @@
 
 #include "d3d9_util.h"
 
-D3D9Surface::D3D9Surface(IDirect3DDevice9* device, ComObject<d3d8::IDirect3DSurface8>&& d3d8Surface)
+D3D9Surface::D3D9Surface(
+    IDirect3DDevice9* device,
+    ComObject<d3d8::IDirect3DSurface8>&& d3d8Surface,
+    IUnknown* container)
   : D3D9Resource (device, reinterpret_cast<d3d8::IDirect3DResource8*>(d3d8Surface.ptr()))
-  , m_d3d8 ( std::move(d3d8Surface) ) {
+  , m_d3d8 ( std::move(d3d8Surface) )
+  , m_container ( container ) {
 }
 
 D3D9Surface::~D3D9Surface() {
@@ -67,7 +71,9 @@ HRESULT STDMETHODCALLTYPE D3D9Surface::ReleaseDC(HDC hDC) {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Surface::GetContainer(REFIID riid, void** ppContainer) {
-  Logger::warn("D3D9Surface::GetContainer: Stub!");
-  return D3D_OK;
+  if (m_container != nullptr)
+    return m_container->QueryInterface(riid, ppContainer);
+
+  return m_device->QueryInterface(riid, ppContainer);
 }
 

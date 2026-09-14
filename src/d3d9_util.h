@@ -99,7 +99,7 @@ inline void ConvertCaps9(const d3d8::D3DCAPS8& caps8, D3DCAPS9* pCaps9) {
   // add all the remaining D3D9 caps, which are not present at all in D3D8
   //
   // none of the D3D9 DevCaps2 are supported/possible in D3D8
-  pCaps9->DevCaps2                 = 0; //   D3DDEVCAPS2_STREAMOFFSET 
+  pCaps9->DevCaps2                 = 0; //   D3DDEVCAPS2_STREAMOFFSET
                                         // | D3DDEVCAPS2_CAN_STRETCHRECT_FROM_TEXTURES
                                         // | D3DDEVCAPS2_VERTEXELEMENTSCANSHARESTREAMOFFSET;
 
@@ -253,3 +253,4 @@ inline T bitcast(const J& src) {
   memcpy(&dst, &src, sizeof(T));
   return dst;
 }
+

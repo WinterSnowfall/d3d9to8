@@ -41,9 +41,11 @@ private:
 
   static void logWithLevel(LogLevel logLevel, const std::string& prefix, const std::string& message);
 
-  static LogLevel s_level;
-  static bool s_writeToLogFile;
-  static bool s_fileInitialized;
+  static LogLevel   s_level;
+
+  static bool       s_writeToLogFile;
+  static bool       s_fileInitialized;
+
   static std::mutex s_logMutex;
 
 };

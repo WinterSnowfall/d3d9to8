@@ -5,16 +5,22 @@
 #include "d3d9_query.h"
 #include "d3d9_stateblock.h"
 
-#include <utility>
-
 using Logger = ThreadSafeLogger;
 
-D3D9Device::D3D9Device(IDirect3D9* intf, ComObject<d3d8::IDirect3DDevice8>&& d3d8Device, D3DPRESENT_PARAMETERS presentParams)
+D3D9Device::D3D9Device(
+    IDirect3D9* intf,
+    ComObject<d3d8::IDirect3DDevice8>&& d3d8Device,
+    D3DPRESENT_PARAMETERS presentParams,
+    DWORD behaviorFlags)
   : m_intf ( intf )
+  , m_isMultitheaded ( behaviorFlags & D3DCREATE_MULTITHREADED )
   , m_d3d8 ( std::move(d3d8Device) )
   , m_presentParams ( presentParams ) {
   ClearCachedD3D8Objects();
   CacheD3D8ObjectsAndRestoreState();
+
+  if (m_isMultitheaded)
+    Logger::info("D3D9Device:: Accounting for D3DCREATE_MULTITHREADED");
 }
 
 D3D9Device::~D3D9Device() {
@@ -144,6 +150,10 @@ UINT STDMETHODCALLTYPE D3D9Device::GetNumberOfSwapChains() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::Reset(D3DPRESENT_PARAMETERS* pPresentationParameters) {
+  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  if (m_isMultitheaded)
+    deviceLock.lock();
+
   m_presentParams = *pPresentationParameters;
 
   ClearCachedD3D8Objects();
@@ -176,6 +186,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetBackBuffer(
         UINT                iBackBuffer,
         D3DBACKBUFFER_TYPE  Type,
         IDirect3DSurface9** ppBackBuffer) {
+  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  if (m_isMultitheaded)
+    deviceLock.lock();
+
   if (ppBackBuffer == nullptr)
     return D3DERR_INVALIDCALL;
 
@@ -193,7 +207,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetBackBuffer(
       return hr;
     }
 
-    m_backBuffers[iBackBuffer] = new D3D9Surface(this, std::move(d3d8BackBuffer));
+    m_backBuffers[iBackBuffer] = new D3D9Surface(this, std::move(d3d8BackBuffer), nullptr);
   }
 
   *ppBackBuffer = m_backBuffers[iBackBuffer].ref();
@@ -423,7 +437,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateRenderTarget(
     return hr;
   }
 
-  *ppSurface = ref(new D3D9Surface(this, std::move(d3d8RenderTarget)));
+  *ppSurface = ref(new D3D9Surface(this, std::move(d3d8RenderTarget), nullptr));
 
   return D3D_OK;
 }
@@ -455,7 +469,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateDepthStencilSurface(
     return hr;
   }
 
-  *ppSurface = ref(new D3D9Surface(this, std::move(d3d8DepthStencil)));
+  *ppSurface = ref(new D3D9Surface(this, std::move(d3d8DepthStencil), nullptr));
 
   return D3D_OK;
 }
@@ -528,15 +542,25 @@ HRESULT STDMETHODCALLTYPE D3D9Device::UpdateTexture(
 HRESULT STDMETHODCALLTYPE D3D9Device::GetRenderTargetData(
         IDirect3DSurface9* pRenderTarget,
         IDirect3DSurface9* pDestSurface) {
-  // TODO: Copy the content with locks, if the surface is lockable
-  Logger::warn("D3D9Device::GetRenderTargetData: Stub!");
-  return D3D_OK;
+  D3D9Surface* sourceSurface9 = reinterpret_cast<D3D9Surface*>(pRenderTarget);
+  D3D9Surface* destinationSurface9 = reinterpret_cast<D3D9Surface*>(pDestSurface);
+
+  // CopyRects will fail if the surfaces have different dimensions,
+  // which is actually the expected behavior here
+  return m_d3d8->CopyRects(sourceSurface9->GetD3D8Surface(), NULL, 0,
+                           destinationSurface9->GetD3D8Surface(), NULL);
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetFrontBufferData(UINT iSwapChain, IDirect3DSurface9* pDestSurface) {
-  Logger::warn("D3D9Device::GetFrontBufferData: Stub!");
-  // TODO: GetFrontBuffer exists in D3D8, but it doesn't copy to pDestSurface
-  return D3D_OK;
+  if (pDestSurface == nullptr)
+    return D3DERR_INVALIDCALL;
+
+  if (iSwapChain != 0)
+    Logger::warn("D3D9Device::GetFrontBufferData: Use of non-zero iSwapChain");
+
+  D3D9Surface* destinationSurface9 = reinterpret_cast<D3D9Surface*>(pDestSurface);
+
+  return m_d3d8->GetFrontBuffer(destinationSurface9->GetD3D8Surface());
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::StretchRect(
@@ -545,10 +569,42 @@ HRESULT STDMETHODCALLTYPE D3D9Device::StretchRect(
         IDirect3DSurface9*   pDestSurface,
   const RECT*                pDestRect,
         D3DTEXTUREFILTERTYPE Filter) {
-  Logger::err("D3D9Device::StretchRect: Unsupported call!");
-  // TODO: If anyone is mad enough to use StretchRect without stretching,
-  // we can simply do that with CopyRects(), but that's about it...
-  return D3D_OK;
+  if (pSourceSurface == nullptr || pDestSurface == nullptr)
+    return D3DERR_INVALIDCALL;
+
+  D3DSURFACE_DESC sourceSurfaceDesc;
+  D3DSURFACE_DESC destSurfaceDesc;
+
+  if (pSourceRect == nullptr)
+    pSourceSurface->GetDesc(&sourceSurfaceDesc);
+  if (pDestRect == nullptr)
+    pDestSurface->GetDesc(&destSurfaceDesc);
+
+  const uint32_t sourceSurfaceWidth  = pSourceRect == nullptr  ? sourceSurfaceDesc.Width  :
+                                                                 pSourceRect->right - pSourceRect->left;
+  const uint32_t sourceSurfaceHeight = pSourceRect == nullptr  ? sourceSurfaceDesc.Height :
+                                                                 pSourceRect->bottom - pSourceRect->top;
+  const uint32_t destSurfaceWidth    = pDestRect == nullptr ? destSurfaceDesc.Width :
+                                                              pDestRect->right - pDestRect->left;
+  const uint32_t destSurfaceHeight   = pDestRect == nullptr ? destSurfaceDesc.Height :
+                                                              pDestRect->bottom - pDestRect->top;
+
+  const bool doesStretching = sourceSurfaceWidth != destSurfaceWidth || sourceSurfaceHeight != destSurfaceHeight;
+
+  // Unfortunately, this will be hit in the vast majority of cases
+  if (doesStretching) {
+    Logger::err("D3D9Device::StretchRect: Unsupported use of stretching!");
+    return D3D_OK; // Don't error out, as some games explode because of it
+  }
+
+  // In case of a non-stretched call, the destination point will always be the top left corner
+  const POINT destPoint = { 0u, 0u };
+
+  D3D9Surface* sourceSurface9 = reinterpret_cast<D3D9Surface*>(pSourceSurface);
+  D3D9Surface* destSurface9 = reinterpret_cast<D3D9Surface*>(pDestSurface);
+
+  return m_d3d8->CopyRects(sourceSurface9->GetD3D8Surface(), pSourceRect, 1,
+                           destSurface9->GetD3D8Surface(), &destPoint);
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::ColorFill(
@@ -584,7 +640,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateOffscreenPlainSurface(
     return hr;
   }
 
-  *ppSurface = ref(new D3D9Surface(this, std::move(d3d8OffscreenSurface)));
+  *ppSurface = ref(new D3D9Surface(this, std::move(d3d8OffscreenSurface), nullptr));
 
   return D3D_OK;
 }
@@ -592,6 +648,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateOffscreenPlainSurface(
 HRESULT STDMETHODCALLTYPE D3D9Device::SetRenderTarget(
         DWORD              RenderTargetIndex,
         IDirect3DSurface9* pRenderTarget) {
+  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  if (m_isMultitheaded)
+    deviceLock.lock();
+
   if (pRenderTarget == nullptr && RenderTargetIndex == 0)
     return D3DERR_INVALIDCALL;
 
@@ -614,6 +674,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetRenderTarget(
 HRESULT STDMETHODCALLTYPE D3D9Device::GetRenderTarget(
         DWORD               RenderTargetIndex,
         IDirect3DSurface9** ppRenderTarget) {
+  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  if (m_isMultitheaded)
+    deviceLock.lock();
+
   if (ppRenderTarget == nullptr)
     return D3DERR_INVALIDCALL;
 
@@ -632,7 +696,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetRenderTarget(
       return hr;
     }
 
-    m_renderTarget = new D3D9Surface(this, std::move(d3d8RenderTarget));
+    m_renderTarget = new D3D9Surface(this, std::move(d3d8RenderTarget), nullptr);
   }
 
   *ppRenderTarget = m_renderTarget.ref();
@@ -641,6 +705,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetRenderTarget(
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::SetDepthStencilSurface(IDirect3DSurface9* pNewZStencil) {
+  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  if (m_isMultitheaded)
+    deviceLock.lock();
+
   D3D9Surface* d3d9DepthStencil = reinterpret_cast<D3D9Surface*>(pNewZStencil);
 
   HRESULT hr = m_d3d8->SetRenderTarget(nullptr, d3d9DepthStencil != nullptr ? d3d9DepthStencil->GetD3D8Surface() : nullptr);
@@ -655,6 +723,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetDepthStencilSurface(IDirect3DSurface9* 
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetDepthStencilSurface(IDirect3DSurface9** ppZStencilSurface) {
+  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  if (m_isMultitheaded)
+    deviceLock.lock();
+
   if (ppZStencilSurface == nullptr)
     return D3DERR_INVALIDCALL;
 
@@ -668,7 +740,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetDepthStencilSurface(IDirect3DSurface9**
       return hr;
     }
 
-    m_depthStencil = new D3D9Surface(this, std::move(d3d8ZStencilSurface));
+    m_depthStencil = new D3D9Surface(this, std::move(d3d8ZStencilSurface), nullptr);
   }
 
   *ppZStencilSurface = m_depthStencil.ref();
@@ -754,10 +826,18 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetRenderState(D3DRENDERSTATETYPE State, D
     default:
       break;
 
-    case D3DRS_DEPTHBIAS:
+    case D3DRS_DEPTHBIAS: {
+      if (Value != 0) {
+        static bool s_depthBiasInfoShown = false;
+
+        if (!std::exchange(s_depthBiasInfoShown, true))
+          Logger::info("D3D9Device::SetRenderState: Converting D3DRS_DEPTHBIAS to D3DRS_ZBIAS");
+      }
+
       State8 = d3d8::D3DRS_ZBIAS;
       Value  = static_cast<DWORD>(bitcast<float>(Value) * D3D9TO8_ZBIAS_SCALE_INV);
       break;
+    }
 
     case D3DRS_ANTIALIASEDLINEENABLE:
       State8 = d3d8::D3DRS_EDGEANTIALIAS;
@@ -779,6 +859,11 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetRenderState(D3DRENDERSTATETYPE State, D
       break;
 
     case D3DRS_DEPTHBIAS: {
+      static bool s_depthBiasInfoShown = false;
+
+      if (!std::exchange(s_depthBiasInfoShown, true))
+        Logger::info("D3D9Device::GetRenderState: Converting D3DRS_ZBIAS to D3DRS_DEPTHBIAS");
+
       DWORD zBias = 0;
       HRESULT res = m_d3d8->GetRenderState(d3d8::D3DRS_ZBIAS, &zBias);
       *pValue     = bitcast<DWORD>(static_cast<float>(zBias) * D3D9TO8_ZBIAS_SCALE);
@@ -840,6 +925,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetClipStatus(D3DCLIPSTATUS9* pClipStatus)
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetTexture(DWORD Stage, IDirect3DBaseTexture9** ppTexture) {
+  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  if (m_isMultitheaded)
+    deviceLock.lock();
+
   if (ppTexture == nullptr)
     return D3DERR_INVALIDCALL;
 
@@ -849,6 +938,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetTexture(DWORD Stage, IDirect3DBaseTextu
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::SetTexture(DWORD Stage, IDirect3DBaseTexture9* pTexture) {
+  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  if (m_isMultitheaded)
+    deviceLock.lock();
+
   D3D9Texture2D* texture9 = reinterpret_cast<D3D9Texture2D*>(pTexture);
 
   if (pTexture != nullptr) {
@@ -1041,16 +1134,18 @@ HRESULT STDMETHODCALLTYPE D3D9Device::DrawIndexedPrimitive(
         UINT             NumVertices,
         UINT             StartIndex,
         UINT             PrimitiveCount) {
+  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  if (m_isMultitheaded)
+    deviceLock.lock();
+
   if (BaseVertexIndex < 0)
     Logger::warn("D3D9Device::DrawIndexedPrimitive: Use of negative BaseVertexIndex");
 
-  if (m_baseVertexIndex != static_cast<UINT>(BaseVertexIndex)) {
-    HRESULT hr = m_d3d8->SetIndices(m_indices->GetD3D8IndexBuffer(), BaseVertexIndex);
-    if (FAILED(hr)) {
-      Logger::err("D3D9Device::DrawIndexedPrimitive: Failed to set new D3D8 BaseVertexIndex");
-      return hr;
-    }
-    m_baseVertexIndex = static_cast<UINT>(BaseVertexIndex);
+  // We need to update the D3D8 BaseVertexIndex on each call, since the bound index buffer may change
+  HRESULT hr = m_d3d8->SetIndices(m_indices->GetD3D8IndexBuffer(), static_cast<UINT>(BaseVertexIndex));
+  if (FAILED(hr)) {
+    Logger::err("D3D9Device::DrawIndexedPrimitive: Failed to set new D3D8 BaseVertexIndex");
+    return hr;
   }
 
   return m_d3d8->DrawIndexedPrimitive(d3d8::D3DPRIMITIVETYPE(PrimitiveType), MinVertexIndex,
@@ -1062,6 +1157,13 @@ HRESULT STDMETHODCALLTYPE D3D9Device::DrawPrimitiveUP(
         UINT             PrimitiveCount,
   const void*            pVertexStreamZeroData,
         UINT             VertexStreamZeroStride) {
+  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  if (m_isMultitheaded)
+    deviceLock.lock();
+
+  m_streamSource[0] = nullptr;
+  m_streamSourceStride[0] = 0u;
+
   return m_d3d8->DrawPrimitiveUP(d3d8::D3DPRIMITIVETYPE(PrimitiveType), PrimitiveCount,
                                  pVertexStreamZeroData, VertexStreamZeroStride);
 }
@@ -1075,6 +1177,14 @@ HRESULT STDMETHODCALLTYPE D3D9Device::DrawIndexedPrimitiveUP(
         D3DFORMAT        IndexDataFormat,
   const void*            pVertexStreamZeroData,
         UINT             VertexStreamZeroStride) {
+  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  if (m_isMultitheaded)
+    deviceLock.lock();
+
+  m_streamSource[0] = nullptr;
+  m_streamSourceStride[0] = 0u;
+  m_indices = nullptr;
+
   return m_d3d8->DrawIndexedPrimitiveUP(d3d8::D3DPRIMITIVETYPE(PrimitiveType), MinVertexIndex, NumVertices,
                                         PrimitiveCount, pIndexData, d3d8::D3DFORMAT(IndexDataFormat),
                                         pVertexStreamZeroData, VertexStreamZeroStride);
@@ -1110,6 +1220,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVertexDeclaration(
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexDeclaration(IDirect3DVertexDeclaration9* pDecl) {
+  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  if (m_isMultitheaded)
+    deviceLock.lock();
+
   Logger::warn("D3D9Device::SetVertexDeclaration: Stub!");
 
   // TODO: Create a new D3D8 shader with the declaration and existing VS function
@@ -1119,6 +1233,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexDeclaration(IDirect3DVertexDeclar
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetVertexDeclaration(IDirect3DVertexDeclaration9** ppDecl) {
+  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  if (m_isMultitheaded)
+    deviceLock.lock();
+
   if (ppDecl == nullptr)
     return D3DERR_INVALIDCALL;
 
@@ -1158,16 +1276,21 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVertexShader(
   if (majorVersion > 1 || (majorVersion == 1 && minorVersion > 1)) {
     Logger::err("D3D9Device::CreateVertexShader: Unsupported VS version " + std::to_string(majorVersion)
                                                                     + "." + std::to_string(minorVersion));
-    if (!D3D9TO8_LENIENT_SHADERS)
-      return D3DERR_INVALIDCALL;
+    // Return a dummy shader object
+    if (D3D9TO8_LENIENT_SHADERS) {
+      *ppShader = ref(new D3D9VertexShader(this, 0u, pFunction));
+      return D3D_OK;
+    }
+    return D3DERR_INVALIDCALL;
   }
 
-  DWORD handle;
+  DWORD handle = 0u;
   // TODO: Create a new D3D8 shader with the current declaration and existing VS function
   HRESULT hr = m_d3d8->CreateVertexShader(nullptr, pFunction, &handle, 0);
   if (FAILED(hr)) {
     Logger::warn("D3D9Device::CreateVertexShader: Failed to create D3D8 vertex shader");
-    return hr;
+    if (!D3D9TO8_LENIENT_SHADERS)
+      return hr;
   }
 
   *ppShader = ref(new D3D9VertexShader(this, handle, pFunction));
@@ -1176,6 +1299,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVertexShader(
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexShader(IDirect3DVertexShader9* pShader) {
+  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  if (m_isMultitheaded)
+    deviceLock.lock();
+
   D3D9VertexShader* vertexShader9 = reinterpret_cast<D3D9VertexShader*>(pShader);
 
   if (pShader != nullptr) {
@@ -1194,6 +1321,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexShader(IDirect3DVertexShader9* pS
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetVertexShader(IDirect3DVertexShader9** ppShader) {
+  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  if (m_isMultitheaded)
+    deviceLock.lock();
+
   if (ppShader == nullptr)
     return D3DERR_INVALIDCALL;
 
@@ -1267,6 +1398,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetStreamSource(
         IDirect3DVertexBuffer9* pStreamData,
         UINT                    OffsetInBytes,
         UINT                    Stride) {
+  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  if (m_isMultitheaded)
+    deviceLock.lock();
+
   if (StreamNumber >= D3D9TO8_MAX_STREAMS)
     return D3DERR_INVALIDCALL;
 
@@ -1294,6 +1429,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetStreamSource(
         IDirect3DVertexBuffer9** ppStreamData,
         UINT*                    pOffsetInBytes,
         UINT*                    pStride) {
+  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  if (m_isMultitheaded)
+    deviceLock.lock();
+
   if (ppStreamData == nullptr)
     return D3DERR_INVALIDCALL;
 
@@ -1330,6 +1469,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetStreamSourceFreq(UINT StreamNumber, UIN
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::SetIndices(IDirect3DIndexBuffer9* pIndexData) {
+  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  if (m_isMultitheaded)
+    deviceLock.lock();
+
   D3D9IndexBuffer* d3d9IndexBuffer = reinterpret_cast<D3D9IndexBuffer*>(pIndexData);
 
   HRESULT hr = m_d3d8->SetIndices(d3d9IndexBuffer != nullptr ? d3d9IndexBuffer->GetD3D8IndexBuffer() : nullptr, 0);
@@ -1344,6 +1487,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetIndices(IDirect3DIndexBuffer9* pIndexDa
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetIndices(IDirect3DIndexBuffer9** ppIndexData) {
+  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  if (m_isMultitheaded)
+    deviceLock.lock();
+
   if (ppIndexData == nullptr)
     return D3DERR_INVALIDCALL;
 
@@ -1368,15 +1515,20 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreatePixelShader(
   if (majorVersion > 1 || (majorVersion == 1 && minorVersion > 4)) {
     Logger::err("D3D9Device::CreatePixelShader: Unsupported PS version " + std::to_string(majorVersion)
                                                                    + "." + std::to_string(minorVersion));
-    if (!D3D9TO8_LENIENT_SHADERS)
-      return D3DERR_INVALIDCALL;
+    // Return a dummy shader object
+    if (D3D9TO8_LENIENT_SHADERS) {
+      *ppShader = ref(new D3D9PixelShader(this, 0u, pFunction));
+      return D3D_OK;
+    }
+    return D3DERR_INVALIDCALL;
   }
 
-  DWORD handle;
+  DWORD handle = 0u;
   HRESULT hr = m_d3d8->CreatePixelShader(pFunction, &handle);
   if (FAILED(hr)) {
     Logger::warn("D3D9Device::CreatePixelShader: Failed to create D3D8 pixel shader");
-    return hr;
+    if (!D3D9TO8_LENIENT_SHADERS)
+      return hr;
   }
 
   *ppShader = ref(new D3D9PixelShader(this, handle, pFunction));
@@ -1385,6 +1537,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreatePixelShader(
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::SetPixelShader(IDirect3DPixelShader9* pShader) {
+  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  if (m_isMultitheaded)
+    deviceLock.lock();
+
   D3D9PixelShader* pixelShader9 = reinterpret_cast<D3D9PixelShader*>(pShader);
 
   if (pShader != nullptr) {
@@ -1403,6 +1559,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetPixelShader(IDirect3DPixelShader9* pSha
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetPixelShader(IDirect3DPixelShader9** ppShader) {
+  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  if (m_isMultitheaded)
+    deviceLock.lock();
+
   if (ppShader == nullptr)
     return D3DERR_INVALIDCALL;
 

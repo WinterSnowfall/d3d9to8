@@ -147,7 +147,7 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CheckDeviceFormat(
   }
 
   if (IsUnsupportedD3D9Format(CheckFormat))
-    Logger::warn("D3D9Interface::CheckDeviceFormat: Query for unsupported format: " + std::to_string(CheckFormat));
+    Logger::debug("D3D9Interface::CheckDeviceFormat: Query for unsupported format: " + std::to_string(CheckFormat));
 
   return m_d3d8->CheckDeviceFormat(
     Adapter,
@@ -248,7 +248,8 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CreateDevice(
     return hr;
   }
 
-  *ppReturnedDeviceInterface = ref(new D3D9Device(this, std::move(d3d8Device), *pPresentationParameters));
+  *ppReturnedDeviceInterface = ref(new D3D9Device(this, std::move(d3d8Device),
+                                                  *pPresentationParameters, BehaviorFlags));
 
   return D3D_OK;
 }

@@ -11,7 +11,10 @@ class D3D9Surface final : public D3D9Resource<IDirect3DSurface9> {
 
 public:
 
-  D3D9Surface(IDirect3DDevice9* device, ComObject<d3d8::IDirect3DSurface8>&& d3d8Surface);
+  D3D9Surface(
+      IDirect3DDevice9* device,
+      ComObject<d3d8::IDirect3DSurface8>&& d3d8Surface,
+      IUnknown* container);
 
   ~D3D9Surface();
 
@@ -38,5 +41,7 @@ public:
 private:
 
   ComObject<d3d8::IDirect3DSurface8> m_d3d8;
+
+  IUnknown*                          m_container = nullptr;
 
 };

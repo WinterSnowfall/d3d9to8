@@ -5,15 +5,17 @@ An experimental demake layer from the more "modern" D3D9 to D3D8, wherever/howev
 Not to be confused with the much more useful [d3d8to9](https://github.com/crosire/d3d8to9). This wrapper goes the other way around, against all logic and common sense.
 
 Known limitations include:
-- D3D9Ex
+- D3D9Ex, though it might be convinced to work to some degree at a later date
 - Use of any SM2+ programmable shaders
-- Calls to StretchRect
-- Surface calls to GetDC/ReleaseDC
-- Use of various D3D9 exclusive sampler/texture stage states and texture formats
+- Calls to `StretchRect` that actually do stretching (the vast majority will)
+- Surface calls to `GetDC`/`ReleaseDC`
+- Use of various D3D9 exclusive sampler/texture stage states
+- Surface/texture formats unique to D3D9, such as `D3DFMT_A16B16G16R16F`
 - Multiple swapchain use (thankfully, it is rare even in D3D9)
-- SetStreamSource calls using offsets
+- `SetStreamSource` calls using offsets
+- `SetStreamSourceFreq` calls, used for instancing
 - Use of multiple simultaneous render targets
-- DrawIndexedPrimitive calls using a negative BaseVertexIndex (should be relatively rare)
+- `DrawIndexedPrimitive` calls using a negative `BaseVertexIndex` (should be relatively rare)
 - Other minor D3D9 exclusive API calls
 
 > [!IMPORTANT]
@@ -27,7 +29,20 @@ Why the dark forces of Chaos, of course. No, it was my love for D3D8 mostly, and
 
 ### Are there any known working games?
 
-Among known fully working titles, I can mention: all the games in the original _W40K: Dawn of War_ collection (NOT the Definitive Edition, mind you), _Aliens versus Predator (Classic 2000)_, _Gun_, _Machinarium_, _Majesty HD_, _Seven Kingdoms: Ancient Adversaries_, _Beyond Divinity_, _Outcast 1.1_, _Sid Meyer's Pirates! (Live the Life)_, _Amnesia: Memories_ and a few others. The list might expand in the future, but probably not by a lot.
+Among known fully working titles, I can mention:
+- _W40K: Dawn of War_ (the original tetralogy, including _Soulstorm_)
+- _Aliens versus Predator (Classic 2000)_
+- _Gun_
+- _Emperor of the Fading Suns Enhanced_
+- _Machinarium_ (legacy DX9 version)
+- _Sid Meyer's Pirates! (Live the Life)_
+- _Majesty HD_
+- _Outcast 1.1_
+- _Beyond Divinity_
+- _Seven Kingdoms: Ancient Adversaries_
+- _Amnesia: Memories_
+
+...and a few others. The list might expand in the future, but probably not by a lot.
 
 Since we report the same capabilities that a D3D8 level card would report to these D3D9 games, we rely on them having fallback paths for such cases. Many later D3D9 games do not, and will outright refuse to run. Some may run with some degree of visual artifacting, or crash at later points in time, when they run into something unexpected.
 
@@ -44,7 +59,7 @@ Simply dropping it next to the game executable will work fine in most cases. It 
 
 ### Is there any benefit in running those games with D3D8 as opposed to D3D9?
 
-None whatsoever. D3D8-capable cards can still run D3D9 just fine, but with limited capabilites, so many games will refuse to start. In that regard, d3d9to8 can do no magic. In truth, you'd have better luck in such cases by sticking with D3D9.
+None whatsoever. D3D8-capable cards can still run D3D9 just fine, but with limited capabilites, so many games will refuse to start. In that regard, d3d9to8 can do no magic. In truth, you'd have better luck by sticking with D3D9 in such cases .
 
 ### Will d3d9to8 work with DXVK?
 

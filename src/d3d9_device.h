@@ -13,6 +13,8 @@
 #include "d3d9_texture.h"
 #include "d3d9_vertex_declaration.h"
 
+#include <mutex>
+#include <utility>
 #include <array>
 #include <vector>
 
@@ -20,7 +22,11 @@ class D3D9Device final : public ComObjectClamp<IDirect3DDevice9> {
 
 public:
 
-  D3D9Device(IDirect3D9* intf, ComObject<d3d8::IDirect3DDevice8>&& d3d8Device, D3DPRESENT_PARAMETERS presentParams);
+  D3D9Device(
+      IDirect3D9* intf,
+      ComObject<d3d8::IDirect3DDevice8>&& d3d8Device,
+      D3DPRESENT_PARAMETERS presentParams,
+      DWORD behaviorFlags);
 
   ~D3D9Device();
 
@@ -477,7 +483,6 @@ private:
     m_backBuffers.clear();
     m_backBuffers.resize(m_presentParams.BackBufferCount);
 
-    m_baseVertexIndex = 0u;
     m_indices = nullptr;
 
     m_streamSource.fill(nullptr);
@@ -494,14 +499,14 @@ private:
     for (UINT i = 0; i < m_presentParams.BackBufferCount; i++) {
       ComObject<d3d8::IDirect3DSurface8> backBuffer8;
       m_d3d8->GetBackBuffer(i, d3d8::D3DBACKBUFFER_TYPE_MONO, &backBuffer8);
-      m_backBuffers[i] = new D3D9Surface(this, std::move(backBuffer8));
+      m_backBuffers[i] = new D3D9Surface(this, std::move(backBuffer8), nullptr);
     }
 
     ComObject<d3d8::IDirect3DSurface8> autoDepthStencil8;
     // This call will fail if the D3D8 device is created without
     // the EnableAutoDepthStencil presentation parameter set to TRUE.
     HRESULT hr = m_d3d8->GetDepthStencilSurface(&autoDepthStencil8);
-    m_autoDepthStencil = FAILED(hr) ? nullptr : new D3D9Surface(this, std::move(autoDepthStencil8));
+    m_autoDepthStencil = FAILED(hr) ? nullptr : new D3D9Surface(this, std::move(autoDepthStencil8), nullptr);
 
     m_renderTarget = m_backBuffers[0];
     m_depthStencil = m_autoDepthStencil;
@@ -511,6 +516,9 @@ private:
   }
 
   IDirect3D9*                                 m_intf;
+
+  std::mutex                                  m_deviceLock;
+  bool                                        m_isMultitheaded = false;
 
   ComObject<d3d8::IDirect3DDevice8>           m_d3d8;
 
@@ -528,7 +536,6 @@ private:
 
   ComObject<D3D9VertexDecl, false>            m_vertexDecl;
 
-  UINT                                        m_baseVertexIndex = 0;
   ComObject<D3D9IndexBuffer, false>           m_indices;
 
   std::array<UINT, D3D9TO8_MAX_STREAMS>       m_streamSourceStride;

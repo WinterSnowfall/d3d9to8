@@ -64,7 +64,7 @@ HRESULT STDMETHODCALLTYPE D3D9Texture2D::GetSurfaceLevel(UINT Level, IDirect3DSu
     return hr;
   }
 
-  *ppSurfaceLevel = ref(new D3D9Surface(m_device, std::move(d3d8SurfaceLevel)));
+  *ppSurfaceLevel = ref(new D3D9Surface(m_device, std::move(d3d8SurfaceLevel), this));
 
   return D3D_OK;
 }
@@ -142,7 +142,7 @@ HRESULT STDMETHODCALLTYPE D3D9TextureCube::GetCubeMapSurface(
   if (FAILED(hr))
     return hr;
 
-  *ppSurfaceLevel = ref(new D3D9Surface(m_device, std::move(d3d8SurfaceLevel)));
+  *ppSurfaceLevel = ref(new D3D9Surface(m_device, std::move(d3d8SurfaceLevel), this));
 
   return D3D_OK;
 }
@@ -214,7 +214,7 @@ HRESULT STDMETHODCALLTYPE D3D9Texture3D::GetVolumeLevel(UINT Level, IDirect3DVol
     return hr;
   }
 
-  *ppSurfaceLevel = ref(new D3D9Volume(m_device, std::move(d3d8VolumeLevel)));
+  *ppSurfaceLevel = ref(new D3D9Volume(m_device, std::move(d3d8VolumeLevel), this));
 
   return D3D_OK;
 }

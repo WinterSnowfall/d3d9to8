@@ -76,7 +76,7 @@ HRESULT STDMETHODCALLTYPE D3D9SwapChain::GetBackBuffer(
       return hr;
     }
 
-    *ppBackBuffer = ref(new D3D9Surface(m_device, std::move(backBuffer8)));
+    *ppBackBuffer = ref(new D3D9Surface(m_device, std::move(backBuffer8), nullptr));
   }
 
   return D3D_OK;
