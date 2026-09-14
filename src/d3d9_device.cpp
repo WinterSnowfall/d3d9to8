@@ -610,8 +610,40 @@ HRESULT STDMETHODCALLTYPE D3D9Device::ColorFill(
         IDirect3DSurface9* pSurface,
   const RECT*              pRect,
         D3DCOLOR           Color) {
-  // TODO: Implement with (temporary) viewport color clears
-  Logger::warn("D3D9Device::ColorFill: Stub!");
+  if (pSurface == nullptr)
+    return D3DERR_INVALIDCALL;
+
+  D3D9Surface* destSurface9 = reinterpret_cast<D3D9Surface*>(pSurface);
+
+  // Use the viewport to apply color clears on the current render target
+  if (m_renderTarget == destSurface9) {
+    d3d8::D3DVIEWPORT8 currentViewport;
+    m_d3d8->GetViewport(&currentViewport);
+
+    D3DSURFACE_DESC destSurfaceDesc = { };
+    if (pRect == nullptr)
+      pSurface->GetDesc(&destSurfaceDesc);
+
+    d3d8::D3DVIEWPORT8 clearViewport;
+    clearViewport.X = pRect == nullptr ? 0u : pRect->left;
+    clearViewport.Y = pRect == nullptr ? 0u : pRect->top;
+    clearViewport.Width  = pRect == nullptr ? destSurfaceDesc.Width : pRect->right - pRect->left;
+    clearViewport.Height = pRect == nullptr ? destSurfaceDesc.Height : pRect->bottom - pRect->top;
+    clearViewport.MinZ = 0.0f;
+    clearViewport.MaxZ = 1.0f;
+
+    m_d3d8->SetViewport(&clearViewport);
+    HRESULT hr = m_d3d8->Clear(pRect == nullptr ? 0 : 1, reinterpret_cast<const d3d8::D3DRECT*>(pRect),
+                               D3DCLEAR_TARGET, Color, 1.0f, 0);
+    if (FAILED(hr))
+      Logger::warn("D3D9Device::ColorFill: Failed D3D8 viewport color clear");
+
+    m_d3d8->SetViewport(&currentViewport);
+  // TODO: Potentially handle other renderable surfaces
+  } else {
+    Logger::warn("D3D9Device::ColorFill: Unsupported surface use!");
+  }
+
   return D3D_OK;
 }
 

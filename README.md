@@ -35,7 +35,7 @@ Among known fully working titles, I can mention:
 - _Gun_
 - _Emperor of the Fading Suns Enhanced_
 - _Machinarium_ (legacy DX9 version)
-- _Sid Meyer's Pirates! (Live the Life)_
+- _Sid Meier's Pirates! (Live the Life)_
 - _Majesty HD_
 - _Outcast 1.1_
 - _Beyond Divinity_
