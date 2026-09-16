@@ -1,8 +1,10 @@
 #include "d3d9_shader_validator.h"
 
 HRESULT STDMETHODCALLTYPE D3D9ShaderValidator::QueryInterface(REFIID riid, void** ppvObject) {
-  if (ppvObject == nullptr)
+  if (unlikely(ppvObject == nullptr))
     return E_POINTER;
+
+  ClearReturnPointer(ppvObject);
 
   *ppvObject = ref(this);
   return S_OK;

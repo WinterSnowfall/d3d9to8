@@ -60,7 +60,7 @@ public:
   HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
 
   HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) {
-    if (ppDevice == nullptr)
+    if (unlikely(ppDevice == nullptr))
       return D3DERR_INVALIDCALL;
 
     *ppDevice = ref(m_device);

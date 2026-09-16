@@ -97,7 +97,7 @@ public:
   }
 
   ComObject& operator = (T* object) {
-    if (m_ptr != object) {
+    if (likely(m_ptr != object)) {
       this->decRef();
       m_ptr = object;
       this->incRef();

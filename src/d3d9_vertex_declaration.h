@@ -25,7 +25,7 @@ public:
           UINT*              pNumElements);
 
   HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) {
-    if (ppDevice == nullptr)
+    if (unlikely(ppDevice == nullptr))
       return D3DERR_INVALIDCALL;
 
     *ppDevice = ref(m_device);

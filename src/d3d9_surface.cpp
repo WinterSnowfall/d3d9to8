@@ -15,14 +15,14 @@ D3D9Surface::~D3D9Surface() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Surface::QueryInterface(REFIID riid, void** ppvObject) {
-  if (ppvObject == nullptr)
+  if (unlikely(ppvObject == nullptr))
     return E_POINTER;
 
-  *ppvObject = nullptr;
+  ClearReturnPointer(ppvObject);
 
-  if (riid == __uuidof(IUnknown)
-   || riid == __uuidof(IDirect3DResource9)
-   || riid == __uuidof(IDirect3DSurface9)) {
+  if (likely(riid == __uuidof(IUnknown)
+          || riid == __uuidof(IDirect3DResource9)
+          || riid == __uuidof(IDirect3DSurface9))) {
     *ppvObject = ref(this);
     return S_OK;
   }
@@ -37,12 +37,12 @@ D3DRESOURCETYPE STDMETHODCALLTYPE D3D9Surface::GetType() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Surface::GetDesc(D3DSURFACE_DESC *pDesc) {
-  if (pDesc == nullptr)
+  if (unlikely(pDesc == nullptr))
     return D3DERR_INVALIDCALL;
 
   d3d8::D3DSURFACE_DESC surfDesc8;
   HRESULT hr = m_d3d8->GetDesc(&surfDesc8);
-  if (FAILED(hr))
+  if (unlikely(FAILED(hr)))
     return hr;
 
   D3DSURFACE_DESC surfDesc9 = ConvertSurfaceDesc8(&surfDesc8);

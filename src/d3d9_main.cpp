@@ -14,16 +14,16 @@ using Logger = ThreadSafeLogger;
 HMODULE GetD3D8Module() {
   static HMODULE d3d8 = nullptr;
 
-  if (d3d8 == nullptr) {
+  if (unlikely(d3d8 == nullptr)) {
     // Determine the system directory path
     char loadPath[MAX_PATH] = { };
     const uint32_t returnLength = ::GetSystemDirectoryA(loadPath, MAX_PATH);
-    if (!returnLength)
+    if (unlikely(!returnLength))
       return nullptr;
 
     strcat(loadPath, "\\d3d8.dll");
     d3d8 = ::LoadLibraryA(loadPath);
-    if (d3d8 != nullptr)
+    if (likely(d3d8 != nullptr))
       Logger::info("GetD3D8Module:: Loaded d3d8.dll from system path");
   }
 
@@ -36,24 +36,24 @@ extern "C" {
     typedef d3d8::IDirect3D8* (__stdcall* Direct3DCreate8_t)(UINT nSDKVersion);
     static Direct3DCreate8_t Direct3DCreate8 = nullptr;
 
-    if (Direct3DCreate8 == nullptr) {
+    if (unlikely(Direct3DCreate8 == nullptr)) {
       HMODULE d3d8 = GetD3D8Module();
 
-      if (d3d8 == nullptr) {
+      if (unlikely(d3d8 == nullptr)) {
         Logger::err("Direct3DCreate9:: Failed to load d3d8.dll!");
         return nullptr;
       }
 
       Direct3DCreate8 = reinterpret_cast<Direct3DCreate8_t>(GetProcAddress(d3d8, "Direct3DCreate8"));
 
-      if (Direct3DCreate8 == nullptr) {
+      if (unlikely(Direct3DCreate8 == nullptr)) {
         Logger::err("Direct3DCreate9:: Failed GetProcAddress");
         return nullptr;
       }
     }
 
     ComObject<d3d8::IDirect3D8> d3d8Intf = Direct3DCreate8(D3D_SDK_VERSION_D3D8);
-    if (d3d8Intf == nullptr) {
+    if (unlikely(d3d8Intf == nullptr)) {
       Logger::err("Direct3DCreate9:: Failed to create a D3D8 interface!");
       return nullptr;
     }
@@ -141,7 +141,7 @@ extern "C" {
         // however apitrace appears to do it with no ill effect, and I have no
         // other ideas on how to properly free up the proxied ddraw.dll.
         HMODULE d3d8 = GetD3D8Module();
-        if (d3d8 != nullptr)
+        if (likely(d3d8 != nullptr))
           FreeLibrary(d3d8);
         Logger::info("<<<<<<< UNLOADING D3D9TO8 <<<<<<<");
         break;

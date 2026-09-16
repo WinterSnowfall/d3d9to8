@@ -4,7 +4,7 @@ D3D9VertexDecl::D3D9VertexDecl(IDirect3DDevice9* device, const D3DVERTEXELEMENT9
   : m_device ( device ) {
   const D3DVERTEXELEMENT9* ptr = vertexElements;
 
-  if (ptr != nullptr) {
+  if (likely(ptr != nullptr)) {
     // Process until we hit D3DDECL_END()
     while(ptr->Type != D3DDECLTYPE_UNUSED) {
       m_vertexElements.push_back(*ptr);
@@ -28,13 +28,13 @@ D3D9VertexDecl::~D3D9VertexDecl() {
 HRESULT STDMETHODCALLTYPE D3D9VertexDecl::QueryInterface(
         REFIID  riid,
         void** ppvObject) {
-  if (ppvObject == nullptr)
+  if (unlikely(ppvObject == nullptr))
     return E_POINTER;
 
-  *ppvObject = nullptr;
+  ClearReturnPointer(ppvObject);
 
-  if (riid == __uuidof(IUnknown)
-   || riid == __uuidof(IDirect3DVertexDeclaration9)) {
+  if (likely(riid == __uuidof(IUnknown)
+          || riid == __uuidof(IDirect3DVertexDeclaration9))) {
     *ppvObject = ref(this);
     return S_OK;
   }
@@ -47,7 +47,7 @@ HRESULT STDMETHODCALLTYPE D3D9VertexDecl::QueryInterface(
 HRESULT STDMETHODCALLTYPE D3D9VertexDecl::GetDeclaration(
         D3DVERTEXELEMENT9* pElement,
         UINT*              pNumElements) {
-  if (pNumElements == nullptr)
+  if (unlikely(pNumElements == nullptr))
     return D3DERR_INVALIDCALL;
 
   *pNumElements = UINT(m_vertexElements.size());

@@ -16,13 +16,13 @@ D3D9SwapChain::~D3D9SwapChain() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9SwapChain::QueryInterface(REFIID riid, void** ppvObject) {
-  if (ppvObject == nullptr)
+  if (unlikely(ppvObject == nullptr))
     return E_POINTER;
 
-  *ppvObject = nullptr;
+  ClearReturnPointer(ppvObject);
 
-  if (riid == __uuidof(IUnknown)
-   || riid == __uuidof(IDirect3DSwapChain9)) {
+  if (likely(riid == __uuidof(IUnknown)
+          || riid == __uuidof(IDirect3DSwapChain9))) {
     *ppvObject = ref(this);
     return S_OK;
   }
@@ -41,7 +41,7 @@ HRESULT STDMETHODCALLTYPE D3D9SwapChain::Present(
   if (dwFlags != 0)
     Logger::warn("D3D9SwapChain::Present: Use of non-zero dwFlags");
 
-  if (m_device != nullptr) {
+  if (likely(m_device != nullptr)) {
     return m_device->Present(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
   } else {
     return m_d3d8->Present(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
@@ -51,10 +51,10 @@ HRESULT STDMETHODCALLTYPE D3D9SwapChain::Present(
 }
 
 HRESULT STDMETHODCALLTYPE D3D9SwapChain::GetFrontBufferData(IDirect3DSurface9* pDestSurface) {
-  if (pDestSurface == nullptr)
+  if (unlikely(pDestSurface == nullptr))
     return D3DERR_INVALIDCALL;
 
-  if (m_device != nullptr)
+  if (likely(m_device != nullptr))
     return m_device->GetFrontBufferData(0, pDestSurface);
 
   Logger::warn("D3D9SwapChain::GetFrontBufferData: Unsupported call!");
@@ -66,12 +66,10 @@ HRESULT STDMETHODCALLTYPE D3D9SwapChain::GetBackBuffer(
         UINT                iBackBuffer,
         D3DBACKBUFFER_TYPE  Type,
         IDirect3DSurface9** ppBackBuffer) {
-  Logger::info("D3D9SwapChain::GetBackBuffer:");
-
-  if (ppBackBuffer == nullptr)
+  if (unlikely(ppBackBuffer == nullptr))
     return D3DERR_INVALIDCALL;
 
-  if (m_device != nullptr) {
+  if (likely(m_device != nullptr)) {
     return m_device->GetBackBuffer(0, iBackBuffer, Type, ppBackBuffer);
   } else {
     ComObject<d3d8::IDirect3DSurface8> backBuffer8;
@@ -88,10 +86,10 @@ HRESULT STDMETHODCALLTYPE D3D9SwapChain::GetBackBuffer(
 }
 
 HRESULT STDMETHODCALLTYPE D3D9SwapChain::GetRasterStatus(D3DRASTER_STATUS* pRasterStatus) {
-  if (pRasterStatus == nullptr)
+  if (unlikely(pRasterStatus == nullptr))
     return D3DERR_INVALIDCALL;
 
-  if (m_device != nullptr)
+  if (likely(m_device != nullptr))
     return m_device->GetRasterStatus(0, pRasterStatus);
 
   Logger::warn("D3D9SwapChain::GetRasterStatus: Unsupported call!");
@@ -103,10 +101,10 @@ HRESULT STDMETHODCALLTYPE D3D9SwapChain::GetRasterStatus(D3DRASTER_STATUS* pRast
 }
 
 HRESULT STDMETHODCALLTYPE D3D9SwapChain::GetDisplayMode(D3DDISPLAYMODE* pMode) {
-  if (pMode == nullptr)
+  if (unlikely(pMode == nullptr))
     return D3DERR_INVALIDCALL;
 
-  if (m_device != nullptr)
+  if (likely(m_device != nullptr))
     return m_device->GetDisplayMode(0, pMode);
 
   Logger::warn("D3D9SwapChain::GetDisplayMode: Unsupported call!");
@@ -118,10 +116,10 @@ HRESULT STDMETHODCALLTYPE D3D9SwapChain::GetDisplayMode(D3DDISPLAYMODE* pMode) {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9SwapChain::GetPresentParameters(D3DPRESENT_PARAMETERS* pPresentationParameters) {
-  if (pPresentationParameters == nullptr)
+  if (unlikely(pPresentationParameters == nullptr))
     return D3DERR_INVALIDCALL;
 
-  if (m_device != nullptr) {
+  if (likely(m_device != nullptr)) {
     D3D9Device* d3d9Device = reinterpret_cast<D3D9Device*>(m_device);
     *pPresentationParameters = *d3d9Device->GetPresentParameters();
   } else {

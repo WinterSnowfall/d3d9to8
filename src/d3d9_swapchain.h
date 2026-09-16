@@ -44,7 +44,7 @@ public:
   HRESULT STDMETHODCALLTYPE GetPresentStats(D3DPRESENTSTATS* pPresentationStatistics);
 
   HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) {
-    if (ppDevice == nullptr)
+    if (unlikely(ppDevice == nullptr))
       return D3DERR_INVALIDCALL;
 
     *ppDevice = ref(m_device);

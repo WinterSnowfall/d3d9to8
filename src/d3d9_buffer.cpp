@@ -11,14 +11,14 @@ D3D9IndexBuffer::~D3D9IndexBuffer() {
 HRESULT STDMETHODCALLTYPE D3D9IndexBuffer::QueryInterface(
         REFIID  riid,
         void** ppvObject) {
-  if (ppvObject == nullptr)
+  if (unlikely(ppvObject == nullptr))
     return E_POINTER;
 
-  *ppvObject = nullptr;
+  ClearReturnPointer(ppvObject);
 
-  if (riid == __uuidof(IUnknown)
-   || riid == __uuidof(IDirect3DResource9)
-   || riid == __uuidof(IDirect3DIndexBuffer9)) {
+  if (likely(riid == __uuidof(IUnknown)
+          || riid == __uuidof(IDirect3DResource9)
+          || riid == __uuidof(IDirect3DIndexBuffer9))) {
     *ppvObject = ref(this);
     return S_OK;
   }
@@ -60,14 +60,14 @@ D3D9VertexBuffer::~D3D9VertexBuffer() {
 HRESULT STDMETHODCALLTYPE D3D9VertexBuffer::QueryInterface(
         REFIID  riid,
         void** ppvObject) {
-  if (ppvObject == nullptr)
+  if (unlikely(ppvObject == nullptr))
     return E_POINTER;
 
-  *ppvObject = nullptr;
+  ClearReturnPointer(ppvObject);
 
-  if (riid == __uuidof(IUnknown)
-   || riid == __uuidof(IDirect3DResource9)
-   || riid == __uuidof(IDirect3DVertexBuffer9)) {
+  if (likely(riid == __uuidof(IUnknown)
+          || riid == __uuidof(IDirect3DResource9)
+          || riid == __uuidof(IDirect3DVertexBuffer9))) {
     *ppvObject = ref(this);
     return S_OK;
   }

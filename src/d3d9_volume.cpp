@@ -15,14 +15,14 @@ D3D9Volume::D3D9Volume(
 D3D9Volume::~D3D9Volume() { }
 
 HRESULT STDMETHODCALLTYPE D3D9Volume::QueryInterface(REFIID riid, void** ppvObject) {
-  if (ppvObject == nullptr)
+  if (unlikely(ppvObject == nullptr))
     return E_POINTER;
 
-  *ppvObject = nullptr;
+  ClearReturnPointer(ppvObject);
 
-  if (riid == __uuidof(IUnknown)
-   || riid == __uuidof(IDirect3DResource9)
-   || riid == __uuidof(IDirect3DVolume9)) {
+  if (likely(riid == __uuidof(IUnknown)
+          || riid == __uuidof(IDirect3DResource9)
+          || riid == __uuidof(IDirect3DVolume9))) {
     *ppvObject = ref(this);
     return S_OK;
   }

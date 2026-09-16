@@ -27,13 +27,13 @@ D3D9Device::~D3D9Device() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::QueryInterface(REFIID riid, void** ppvObject) {
-  if (ppvObject == nullptr)
+  if (unlikely(ppvObject == nullptr))
     return E_POINTER;
 
-  *ppvObject = nullptr;
+  ClearReturnPointer(ppvObject);
 
-  if (riid == __uuidof(IUnknown)
-   || riid == __uuidof(IDirect3DDevice9)) {
+  if (likely(riid == __uuidof(IUnknown)
+          || riid == __uuidof(IDirect3DDevice9))) {
     *ppvObject = ref(this);
     return S_OK;
   }
@@ -59,7 +59,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::EvictManagedResources() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetDirect3D(IDirect3D9** ppD3D9) {
-  if (ppD3D9 == nullptr)
+  if (unlikely(ppD3D9 == nullptr))
     return D3DERR_INVALIDCALL;
 
   *ppD3D9 = ref(m_intf);
@@ -68,12 +68,12 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetDirect3D(IDirect3D9** ppD3D9) {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetDeviceCaps(D3DCAPS9* pCaps) {
-  if (pCaps == nullptr)
+  if (unlikely(pCaps == nullptr))
     return D3DERR_INVALIDCALL;
 
   d3d8::D3DCAPS8 caps8;
   HRESULT hr = m_d3d8->GetDeviceCaps(&caps8);
-  if (FAILED(hr))
+  if (unlikely(FAILED(hr)))
     return hr;
 
   ConvertCaps9(caps8, pCaps);
@@ -111,7 +111,7 @@ BOOL STDMETHODCALLTYPE D3D9Device::ShowCursor(BOOL bShow) {
 HRESULT STDMETHODCALLTYPE D3D9Device::CreateAdditionalSwapChain(
         D3DPRESENT_PARAMETERS* pPresentationParameters,
         IDirect3DSwapChain9**  ppSwapChain) {
-  if (ppSwapChain == nullptr)
+  if (unlikely(ppSwapChain == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppSwapChain);
@@ -120,7 +120,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateAdditionalSwapChain(
 
   ComObject<d3d8::IDirect3DSwapChain8> d3d8SwapChain;
   HRESULT hr = m_d3d8->CreateAdditionalSwapChain(&params8, &d3d8SwapChain);
-  if (FAILED(hr)) {
+  if (unlikely(FAILED(hr))) {
     Logger::warn("D3D9Device::CreateAdditionalSwapChain: Failed to create D3D8 swapchain");
     return hr;
   }
@@ -131,7 +131,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateAdditionalSwapChain(
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetSwapChain(UINT iSwapChain, IDirect3DSwapChain9** pSwapChain) {
-  if (pSwapChain == nullptr)
+  if (unlikely(pSwapChain == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(pSwapChain);
@@ -162,7 +162,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::Reset(D3DPRESENT_PARAMETERS* pPresentation
   HRESULT hr = m_d3d8->Reset(&params8);
   // Failed calls can be legitimate cues that make calling apps release
   // any still held resources and then retry the Reset() call
-  if (FAILED(hr)) {
+  if (unlikely(FAILED(hr))) {
     Logger::debug("D3D9Device::Reset: Failed to reset the D3D8 device");
     return hr;
   }
@@ -189,7 +189,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetBackBuffer(
   if (m_isMultitheaded)
     deviceLock.lock();
 
-  if (ppBackBuffer == nullptr)
+  if (unlikely(ppBackBuffer == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppBackBuffer);
@@ -197,7 +197,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetBackBuffer(
   if (iSwapChain != 0)
     Logger::warn("D3D9Device::GetBackBuffer: Use of non-zero iSwapChain");
 
-  if (m_backBuffers[iBackBuffer] == nullptr || iBackBuffer >= m_backBuffers.size()) {
+  if (unlikely(m_backBuffers[iBackBuffer] == nullptr || iBackBuffer >= m_backBuffers.size())) {
     ComObject<d3d8::IDirect3DSurface8> d3d8BackBuffer;
     HRESULT hr = m_d3d8->GetBackBuffer(iBackBuffer, d3d8::D3DBACKBUFFER_TYPE(Type),
                                        &d3d8BackBuffer);
@@ -252,7 +252,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateTexture(
         D3DPOOL             Pool,
         IDirect3DTexture9** ppTexture,
         HANDLE*             pSharedHandle) {
-  if (ppTexture == nullptr)
+  if (unlikely(ppTexture == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppTexture);
@@ -264,14 +264,14 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateTexture(
   //Logger::debug("D3D9Device::CreateTexture: Format: " + std::to_string(Format));
   //Logger::debug("D3D9Device::CreateTexture: Pool:   " + std::to_string(Pool));
 
-  if (IsUnsupportedD3D9Format(Format))
+  if (unlikely(IsUnsupportedD3D9Format(Format)))
     Logger::err("D3D9Device::CreateTexture: Use of unsupported format: " + std::to_string(Format));
 
   ComObject<d3d8::IDirect3DTexture8> d3d8Texture;
   HRESULT hr = m_d3d8->CreateTexture(Width, Height, Levels, Usage,
                                      d3d8::D3DFORMAT(Format), d3d8::D3DPOOL(Pool),
                                      &d3d8Texture);
-  if (FAILED(hr)) {
+  if (unlikely(FAILED(hr))) {
     Logger::warn("D3D9Device::CreateTexture: Failed to create D3D8 texture");
     return hr;
   }
@@ -291,7 +291,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVolumeTexture(
         D3DPOOL                   Pool,
         IDirect3DVolumeTexture9** ppVolumeTexture,
         HANDLE*                   pSharedHandle) {
-  if (ppVolumeTexture == nullptr)
+  if (unlikely(ppVolumeTexture == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppVolumeTexture);
@@ -304,14 +304,14 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVolumeTexture(
   //Logger::debug("D3D9Device::CreateVolumeTexture: Format: " + std::to_string(Format));
   //Logger::debug("D3D9Device::CreateVolumeTexture: Pool:   " + std::to_string(Pool));
 
-  if (IsUnsupportedD3D9Format(Format))
+  if (unlikely(IsUnsupportedD3D9Format(Format)))
     Logger::err("D3D9Device::CreateVolumeTexture: Use of unsupported format: " + std::to_string(Format));
 
   ComObject<d3d8::IDirect3DVolumeTexture8> d3d8VolumeTexture;
   HRESULT hr = m_d3d8->CreateVolumeTexture(Width, Height, Depth, Levels, Usage,
                                            d3d8::D3DFORMAT(Format), d3d8::D3DPOOL(Pool),
                                            &d3d8VolumeTexture);
-  if (FAILED(hr)) {
+  if (unlikely(FAILED(hr))) {
     Logger::warn("D3D9Device::CreateVolumeTexture: Failed to create D3D8 volume texture");
     return hr;
   }
@@ -329,7 +329,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateCubeTexture(
         D3DPOOL                 Pool,
         IDirect3DCubeTexture9** ppCubeTexture,
         HANDLE*                 pSharedHandle) {
-  if (ppCubeTexture == nullptr)
+  if (unlikely(ppCubeTexture == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppCubeTexture);
@@ -340,14 +340,14 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateCubeTexture(
   //Logger::debug("D3D9Device::CreateCubeTexture: Format:      " + std::to_string(Format));
   //Logger::debug("D3D9Device::CreateCubeTexture: Pool:        " + std::to_string(Pool));
 
-  if (IsUnsupportedD3D9Format(Format))
+  if (unlikely(IsUnsupportedD3D9Format(Format)))
     Logger::err("D3D9Device::CreateCubeTexture: Use of unsupported format: " + std::to_string(Format));
 
   ComObject<d3d8::IDirect3DCubeTexture8> d3d8CubeTexture = nullptr;
   HRESULT hr = m_d3d8->CreateCubeTexture(EdgeLength, Levels, Usage,
                                          d3d8::D3DFORMAT(Format), d3d8::D3DPOOL(Pool),
                                          &d3d8CubeTexture);
-  if (FAILED(hr)) {
+  if (unlikely(FAILED(hr))) {
     Logger::warn("D3D9Device::CreateCubeTexture: Failed to create D3D8 cube texture");
     return hr;
   }
@@ -364,16 +364,15 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVertexBuffer(
         D3DPOOL                  Pool,
         IDirect3DVertexBuffer9** ppVertexBuffer,
         HANDLE*                  pSharedHandle) {
-  if (ppVertexBuffer == nullptr)
+  if (unlikely(ppVertexBuffer == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppVertexBuffer);
 
   ComObject<d3d8::IDirect3DVertexBuffer8> d3d8VertexBuffer;
   HRESULT hr = m_d3d8->CreateVertexBuffer(Length, Usage, FVF,
-                                          d3d8::D3DPOOL(Pool),
-                                          &d3d8VertexBuffer);
-  if (FAILED(hr)) {
+                                          d3d8::D3DPOOL(Pool), &d3d8VertexBuffer);
+  if (unlikely(FAILED(hr))) {
     Logger::warn("D3D9Device::CreateVertexBuffer: Failed to create D3D8 vertex buffer");
     return hr;
   }
@@ -390,16 +389,15 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateIndexBuffer(
         D3DPOOL                 Pool,
         IDirect3DIndexBuffer9** ppIndexBuffer,
         HANDLE*                 pSharedHandle) {
-  if (ppIndexBuffer == nullptr)
+  if (unlikely(ppIndexBuffer == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppIndexBuffer);
 
   ComObject<d3d8::IDirect3DIndexBuffer8> d3d8IndexBuffer;
-  HRESULT hr = m_d3d8->CreateIndexBuffer(Length, Usage,
-                                         d3d8::D3DFORMAT(Format), d3d8::D3DPOOL(Pool),
-                                         &d3d8IndexBuffer);
-  if (FAILED(hr)) {
+  HRESULT hr = m_d3d8->CreateIndexBuffer(Length, Usage, d3d8::D3DFORMAT(Format),
+                                         d3d8::D3DPOOL(Pool), &d3d8IndexBuffer);
+  if (unlikely(FAILED(hr))) {
     Logger::warn("D3D9Device::CreateIndexBuffer: Failed to create D3D8 index buffer");
     return hr;
   }
@@ -418,12 +416,12 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateRenderTarget(
         BOOL                Lockable,
         IDirect3DSurface9** ppSurface,
         HANDLE*             pSharedHandle) {
-  if (ppSurface == nullptr)
+  if (unlikely(ppSurface == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppSurface);
 
-  if (IsUnsupportedD3D9Format(Format))
+  if (unlikely(IsUnsupportedD3D9Format(Format)))
     Logger::err("D3D9Device::CreateRenderTarget: Use of unsupported format: " + std::to_string(Format));
 
   ComObject<d3d8::IDirect3DSurface8> d3d8RenderTarget;
@@ -431,7 +429,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateRenderTarget(
                                           d3d8::D3DFORMAT(Format),
                                           d3d8::D3DMULTISAMPLE_TYPE(MultiSample),
                                           Lockable, &d3d8RenderTarget);
-  if (FAILED(hr)) {
+  if (unlikely(FAILED(hr))) {
     Logger::warn("D3D9Device::CreateRenderTarget: Failed to create D3D8 render target surface");
     return hr;
   }
@@ -450,12 +448,12 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateDepthStencilSurface(
         BOOL                Discard,
         IDirect3DSurface9** ppSurface,
         HANDLE*             pSharedHandle) {
-  if (ppSurface == nullptr)
+  if (unlikely(ppSurface == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppSurface);
 
-  if (IsUnsupportedD3D9Format(Format))
+  if (unlikely(IsUnsupportedD3D9Format(Format)))
     Logger::err("D3D9Device::CreateDepthStencilSurface: Use of unsupported format: " + std::to_string(Format));
 
   ComObject<d3d8::IDirect3DSurface8> d3d8DepthStencil;
@@ -463,7 +461,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateDepthStencilSurface(
                                                  d3d8::D3DFORMAT(Format),
                                                  d3d8::D3DMULTISAMPLE_TYPE(MultiSample),
                                                  &d3d8DepthStencil);
-  if (FAILED(hr)) {
+  if (unlikely(FAILED(hr))) {
     Logger::warn("D3D9Device::CreateDepthStencilSurface: Failed to create D3D8 depth stencil surface");
     return hr;
   }
@@ -491,7 +489,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::UpdateTexture(
   d3d8::IDirect3DBaseTexture8* sourceTexture8 = nullptr;
   d3d8::IDirect3DBaseTexture8* destinationTexture8 = nullptr;
 
-  if (pSourceTexture != nullptr) {
+  if (likely(pSourceTexture != nullptr)) {
     const D3DRESOURCETYPE sourceTextureType = pSourceTexture->GetType();
     switch (sourceTextureType) {
       default:
@@ -513,7 +511,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::UpdateTexture(
     }
   }
 
-  if (pDestinationTexture != nullptr) {
+  if (likely(pDestinationTexture != nullptr)) {
     const D3DRESOURCETYPE destinationTextureType = pDestinationTexture->GetType();
     switch (destinationTextureType) {
       default:
@@ -551,7 +549,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetRenderTargetData(
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetFrontBufferData(UINT iSwapChain, IDirect3DSurface9* pDestSurface) {
-  if (pDestSurface == nullptr)
+  if (unlikely(pDestSurface == nullptr))
     return D3DERR_INVALIDCALL;
 
   if (iSwapChain != 0)
@@ -568,7 +566,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::StretchRect(
         IDirect3DSurface9*   pDestSurface,
   const RECT*                pDestRect,
         D3DTEXTUREFILTERTYPE Filter) {
-  if (pSourceSurface == nullptr || pDestSurface == nullptr)
+  if (unlikely(pSourceSurface == nullptr || pDestSurface == nullptr))
     return D3DERR_INVALIDCALL;
 
   D3DSURFACE_DESC sourceSurfaceDesc;
@@ -610,7 +608,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::ColorFill(
         IDirect3DSurface9* pSurface,
   const RECT*              pRect,
         D3DCOLOR           Color) {
-  if (pSurface == nullptr)
+  if (unlikely(pSurface == nullptr))
     return D3DERR_INVALIDCALL;
 
   D3D9Surface* destSurface9 = reinterpret_cast<D3D9Surface*>(pSurface);
@@ -654,19 +652,19 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateOffscreenPlainSurface(
   D3DPOOL Pool,
   IDirect3DSurface9** ppSurface,
   HANDLE* pSharedHandle) {
-  if (ppSurface == nullptr)
+  if (unlikely(ppSurface == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppSurface);
 
-  if (IsUnsupportedD3D9Format(Format))
+  if (unlikely(IsUnsupportedD3D9Format(Format)))
     Logger::err("D3D9Device::CreateOffscreenPlainSurface: Use of unsupported format: " + std::to_string(Format));
 
   ComObject<d3d8::IDirect3DSurface8> d3d8OffscreenSurface;
   HRESULT hr = m_d3d8->CreateImageSurface(Width, Height,
                                           d3d8::D3DFORMAT(Format),
                                           &d3d8OffscreenSurface);
-  if (FAILED(hr)) {
+  if (unlikely(FAILED(hr))) {
     Logger::warn("D3D9Device::CreateOffscreenPlainSurface: Failed to create D3D8 offscreen surface");
     return hr;
   }
@@ -683,7 +681,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetRenderTarget(
   if (m_isMultitheaded)
     deviceLock.lock();
 
-  if (pRenderTarget == nullptr && RenderTargetIndex == 0)
+  if (unlikely(pRenderTarget == nullptr && RenderTargetIndex == 0))
     return D3DERR_INVALIDCALL;
 
   if (RenderTargetIndex != 0 && pRenderTarget != nullptr)
@@ -692,7 +690,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetRenderTarget(
   D3D9Surface* d3d9RenderTarget = reinterpret_cast<D3D9Surface*>(pRenderTarget);
 
   HRESULT hr = m_d3d8->SetRenderTarget(d3d9RenderTarget != nullptr ? d3d9RenderTarget->GetD3D8Surface() : nullptr, nullptr);
-  if (FAILED(hr)) {
+  if (unlikely(FAILED(hr))) {
     Logger::warn("D3D9Device::SetRenderTarget: Failed to set D3D8 render target");
     return hr;
   }
@@ -709,7 +707,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetRenderTarget(
   if (m_isMultitheaded)
     deviceLock.lock();
 
-  if (ppRenderTarget == nullptr)
+  if (unlikely(ppRenderTarget == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppRenderTarget);
@@ -719,7 +717,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetRenderTarget(
     return D3DERR_NOTFOUND;
   }
 
-  if (m_renderTarget == nullptr) {
+  if (unlikely(m_renderTarget == nullptr)) {
     ComObject<d3d8::IDirect3DSurface8> d3d8RenderTarget;
     HRESULT hr = m_d3d8->GetRenderTarget(&d3d8RenderTarget);
     if (FAILED(hr)) {
@@ -743,7 +741,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetDepthStencilSurface(IDirect3DSurface9* 
   D3D9Surface* d3d9DepthStencil = reinterpret_cast<D3D9Surface*>(pNewZStencil);
 
   HRESULT hr = m_d3d8->SetRenderTarget(nullptr, d3d9DepthStencil != nullptr ? d3d9DepthStencil->GetD3D8Surface() : nullptr);
-  if (FAILED(hr)) {
+  if (unlikely(FAILED(hr))) {
     Logger::warn("D3D9Device::SetDepthStencilSurface: Failed to set D3D8 depth stencil");
     return hr;
   }
@@ -758,12 +756,12 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetDepthStencilSurface(IDirect3DSurface9**
   if (m_isMultitheaded)
     deviceLock.lock();
 
-  if (ppZStencilSurface == nullptr)
+  if (unlikely(ppZStencilSurface == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppZStencilSurface);
 
-  if (m_depthStencil == nullptr) {
+  if (unlikely(m_depthStencil == nullptr)) {
     ComObject<d3d8::IDirect3DSurface8> d3d8ZStencilSurface;
     HRESULT hr = m_d3d8->GetDepthStencilSurface(&d3d8ZStencilSurface);
     if (FAILED(hr)) {
@@ -916,14 +914,14 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetRenderState(D3DRENDERSTATETYPE State, D
 HRESULT STDMETHODCALLTYPE D3D9Device::CreateStateBlock(
         D3DSTATEBLOCKTYPE      Type,
         IDirect3DStateBlock9** ppSB) {
-  if (ppSB == nullptr)
+  if (unlikely(ppSB == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppSB);
 
   DWORD handle;
   HRESULT hr = m_d3d8->CreateStateBlock(d3d8::D3DSTATEBLOCKTYPE(Type), &handle);
-  if (FAILED(hr))
+  if (unlikely(FAILED(hr)))
     return hr;
 
   *ppSB = ref(new D3D9StateBlock(this, handle));
@@ -936,14 +934,14 @@ HRESULT STDMETHODCALLTYPE D3D9Device::BeginStateBlock() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::EndStateBlock(IDirect3DStateBlock9** ppSB) {
-  if (ppSB == nullptr)
+  if (unlikely(ppSB == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppSB);
 
   DWORD handle;
   HRESULT hr = m_d3d8->EndStateBlock(&handle);
-  if (FAILED(hr))
+  if (unlikely(FAILED(hr)))
     return hr;
 
   *ppSB = ref(new D3D9StateBlock(this, handle));
@@ -964,7 +962,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetTexture(DWORD Stage, IDirect3DBaseTextu
   if (m_isMultitheaded)
     deviceLock.lock();
 
-  if (ppTexture == nullptr)
+  if (unlikely(ppTexture == nullptr))
     return D3DERR_INVALIDCALL;
 
   *ppTexture = m_textures[Stage].ref();
@@ -1113,7 +1111,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetCurrentTexturePalette(UINT *PaletteNumb
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::SetScissorRect(const RECT* pRect) {
-  if (pRect == nullptr)
+  if (unlikely(pRect == nullptr))
     return D3DERR_INVALIDCALL;
 
   Logger::warn("D3D9Device::SetScissorRect: Unsupported call!");
@@ -1122,7 +1120,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetScissorRect(const RECT* pRect) {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetScissorRect(RECT* pRect) {
-  if (pRect == nullptr)
+  if (unlikely(pRect == nullptr))
     return D3DERR_INVALIDCALL;
 
   Logger::warn("D3D9Device::GetScissorRect: Unsupported call!");
@@ -1173,12 +1171,12 @@ HRESULT STDMETHODCALLTYPE D3D9Device::DrawIndexedPrimitive(
   if (m_isMultitheaded)
     deviceLock.lock();
 
-  if (BaseVertexIndex < 0)
+  if (unlikely(BaseVertexIndex < 0))
     Logger::warn("D3D9Device::DrawIndexedPrimitive: Use of negative BaseVertexIndex");
 
   // We need to update the D3D8 BaseVertexIndex on each call, since the bound index buffer may change
   HRESULT hr = m_d3d8->SetIndices(m_indices->GetD3D8IndexBuffer(), static_cast<UINT>(BaseVertexIndex));
-  if (FAILED(hr)) {
+  if (unlikely(FAILED(hr))) {
     Logger::err("D3D9Device::DrawIndexedPrimitive: Failed to set new D3D8 BaseVertexIndex");
     return hr;
   }
@@ -1244,7 +1242,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::ProcessVertices(
 HRESULT STDMETHODCALLTYPE D3D9Device::CreateVertexDeclaration(
   const D3DVERTEXELEMENT9*            pVertexElements,
         IDirect3DVertexDeclaration9** ppDecl) {
-  if (ppDecl == nullptr)
+  if (unlikely(ppDecl == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppDecl);
@@ -1272,7 +1270,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetVertexDeclaration(IDirect3DVertexDeclar
   if (m_isMultitheaded)
     deviceLock.lock();
 
-  if (ppDecl == nullptr)
+  if (unlikely(ppDecl == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppDecl);
@@ -1302,7 +1300,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetFVF(DWORD* pFVF) {
 HRESULT STDMETHODCALLTYPE D3D9Device::CreateVertexShader(
   const DWORD*                   pFunction,
         IDirect3DVertexShader9** ppShader) {
-  if (pFunction == nullptr || ppShader == nullptr)
+  if (unlikely(pFunction == nullptr || ppShader == nullptr))
     return D3DERR_INVALIDCALL;
 
   const uint32_t majorVersion = D3DSHADER_VERSION_MAJOR(pFunction[0]);
@@ -1312,7 +1310,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVertexShader(
     Logger::err("D3D9Device::CreateVertexShader: Unsupported VS version " + std::to_string(majorVersion)
                                                                     + "." + std::to_string(minorVersion));
     // Return a dummy shader object
-    if (D3D9TO8_LENIENT_SHADERS) {
+    if (unlikely(D3D9TO8_LENIENT_SHADERS)) {
       *ppShader = ref(new D3D9VertexShader(this, 0u, pFunction));
       return D3D_OK;
     }
@@ -1322,9 +1320,9 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVertexShader(
   DWORD handle = 0u;
   // TODO: Create a new D3D8 shader with the current declaration and existing VS function
   HRESULT hr = m_d3d8->CreateVertexShader(nullptr, pFunction, &handle, 0);
-  if (FAILED(hr)) {
+  if (unlikely(FAILED(hr))) {
     Logger::warn("D3D9Device::CreateVertexShader: Failed to create D3D8 vertex shader");
-    if (!D3D9TO8_LENIENT_SHADERS)
+    if (likely(!D3D9TO8_LENIENT_SHADERS))
       return hr;
   }
 
@@ -1342,7 +1340,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexShader(IDirect3DVertexShader9* pS
 
   if (pShader != nullptr) {
     HRESULT hr = m_d3d8->SetVertexShader(vertexShader9->GetD3D8VSHandle());
-    if (FAILED(hr)) {
+    if (unlikely(FAILED(hr))) {
       Logger::warn("D3D9Device::SetVertexShader: Failed to set D3D8 vertex shader");
       return hr;
     }
@@ -1360,7 +1358,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetVertexShader(IDirect3DVertexShader9** p
   if (m_isMultitheaded)
     deviceLock.lock();
 
-  if (ppShader == nullptr)
+  if (unlikely(ppShader == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppShader);
@@ -1396,7 +1394,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetVertexShaderConstantI(
         UINT StartRegister,
         int* pConstantData,
         UINT Vector4iCount) {
-  if (pConstantData == nullptr)
+  if (unlikely(pConstantData == nullptr))
     return D3DERR_INVALIDCALL;
 
   Logger::err("D3D9Device::GetVertexShaderConstantI: Unsupported call!");
@@ -1418,7 +1416,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetVertexShaderConstantB(
         UINT  StartRegister,
         BOOL* pConstantData,
         UINT  BoolCount) {
-  if (pConstantData == nullptr)
+  if (unlikely(pConstantData == nullptr))
     return D3DERR_INVALIDCALL;
 
   Logger::err("D3D9Device::GetVertexShaderConstantB: Unsupported call!");
@@ -1437,7 +1435,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetStreamSource(
   if (m_isMultitheaded)
     deviceLock.lock();
 
-  if (StreamNumber >= D3D9TO8_MAX_STREAMS)
+  if (unlikely(StreamNumber >= D3D9TO8_MAX_STREAMS))
     return D3DERR_INVALIDCALL;
 
   D3D9VertexBuffer* vertexBuffer9 = reinterpret_cast<D3D9VertexBuffer*>(pStreamData);
@@ -1448,7 +1446,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetStreamSource(
   HRESULT hr = m_d3d8->SetStreamSource(StreamNumber,
                                        vertexBuffer9 != nullptr ? vertexBuffer9->GetD3D8VertexBuffer() : nullptr,
                                        Stride);
-  if (FAILED(hr)) {
+  if (unlikely(FAILED(hr))) {
     Logger::warn("D3D9Device::SetStreamSource: Failed to set the D3D8 stream source");
     return hr;
   }
@@ -1468,12 +1466,12 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetStreamSource(
   if (m_isMultitheaded)
     deviceLock.lock();
 
-  if (ppStreamData == nullptr)
+  if (unlikely(ppStreamData == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppStreamData);
 
-  if (StreamNumber >= D3D9TO8_MAX_STREAMS)
+  if (unlikely(StreamNumber >= D3D9TO8_MAX_STREAMS))
     return D3DERR_INVALIDCALL;
 
   if (pOffsetInBytes != nullptr)
@@ -1493,7 +1491,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetStreamSourceFreq(UINT StreamNumber, UIN
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetStreamSourceFreq(UINT StreamNumber, UINT* pSetting) {
-  if (pSetting == nullptr)
+  if (unlikely(pSetting == nullptr))
     return D3DERR_INVALIDCALL;
 
   Logger::err("D3D9Device::SetStreamSourceFreq: Unsupported call!");
@@ -1511,7 +1509,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetIndices(IDirect3DIndexBuffer9* pIndexDa
   D3D9IndexBuffer* d3d9IndexBuffer = reinterpret_cast<D3D9IndexBuffer*>(pIndexData);
 
   HRESULT hr = m_d3d8->SetIndices(d3d9IndexBuffer != nullptr ? d3d9IndexBuffer->GetD3D8IndexBuffer() : nullptr, 0);
-  if (FAILED(hr)) {
+  if (unlikely(FAILED(hr))) {
     Logger::warn("D3D9Device::SetIndices: Failed to set D3D8 indices");
     return hr;
   }
@@ -1526,7 +1524,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetIndices(IDirect3DIndexBuffer9** ppIndex
   if (m_isMultitheaded)
     deviceLock.lock();
 
-  if (ppIndexData == nullptr)
+  if (unlikely(ppIndexData == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppIndexData);
@@ -1539,7 +1537,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetIndices(IDirect3DIndexBuffer9** ppIndex
 HRESULT STDMETHODCALLTYPE D3D9Device::CreatePixelShader(
   const DWORD*                  pFunction,
         IDirect3DPixelShader9** ppShader) {
-  if (pFunction == nullptr || ppShader == nullptr)
+  if (unlikely(pFunction == nullptr || ppShader == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppShader);
@@ -1551,7 +1549,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreatePixelShader(
     Logger::err("D3D9Device::CreatePixelShader: Unsupported PS version " + std::to_string(majorVersion)
                                                                    + "." + std::to_string(minorVersion));
     // Return a dummy shader object
-    if (D3D9TO8_LENIENT_SHADERS) {
+    if (unlikely(D3D9TO8_LENIENT_SHADERS)) {
       *ppShader = ref(new D3D9PixelShader(this, 0u, pFunction));
       return D3D_OK;
     }
@@ -1560,9 +1558,9 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreatePixelShader(
 
   DWORD handle = 0u;
   HRESULT hr = m_d3d8->CreatePixelShader(pFunction, &handle);
-  if (FAILED(hr)) {
+  if (unlikely(FAILED(hr))) {
     Logger::warn("D3D9Device::CreatePixelShader: Failed to create D3D8 pixel shader");
-    if (!D3D9TO8_LENIENT_SHADERS)
+    if (likely(!D3D9TO8_LENIENT_SHADERS))
       return hr;
   }
 
@@ -1580,7 +1578,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetPixelShader(IDirect3DPixelShader9* pSha
 
   if (pShader != nullptr) {
     HRESULT hr = m_d3d8->SetPixelShader(pixelShader9->GetD3D8PSHandle());
-    if (FAILED(hr)) {
+    if (unlikely(FAILED(hr))) {
       Logger::warn("D3D9Device::SetPixelShader: Failed to set D3D8 pixel shader");
       return hr;
     }
@@ -1598,7 +1596,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetPixelShader(IDirect3DPixelShader9** ppS
   if (m_isMultitheaded)
     deviceLock.lock();
 
-  if (ppShader == nullptr)
+  if (unlikely(ppShader == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppShader);
@@ -1634,7 +1632,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetPixelShaderConstantI(
   UINT StartRegister,
   int* pConstantData,
   UINT Vector4iCount) {
-  if (pConstantData == nullptr)
+  if (unlikely(pConstantData == nullptr))
     return D3DERR_INVALIDCALL;
 
   Logger::err("D3D9Device::GetPixelShaderConstantI: Unsupported call!");
@@ -1656,7 +1654,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetPixelShaderConstantB(
   UINT  StartRegister,
   BOOL* pConstantData,
   UINT  BoolCount) {
-  if (pConstantData == nullptr)
+  if (unlikely(pConstantData == nullptr))
     return D3DERR_INVALIDCALL;
 
   Logger::err("D3D9Device::GetPixelShaderConstantB: Unsupported call!");
@@ -1685,7 +1683,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::DeletePatch(UINT Handle) {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::CreateQuery(D3DQUERYTYPE Type, IDirect3DQuery9** ppQuery) {
-  if (ppQuery == nullptr)
+  if (unlikely(ppQuery == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppQuery);

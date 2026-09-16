@@ -48,13 +48,13 @@ D3D9Interface::~D3D9Interface() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Interface::QueryInterface(REFIID riid, void** ppvObject) {
-  if (ppvObject == nullptr)
+  if (unlikely(ppvObject == nullptr))
     return E_POINTER;
 
-  *ppvObject = nullptr;
+  ClearReturnPointer(ppvObject);
 
-  if (riid == __uuidof(IUnknown)
-   || riid == __uuidof(IDirect3D9)) {
+  if (likely(riid == __uuidof(IUnknown)
+          || riid == __uuidof(IDirect3D9))) {
     *ppvObject = ref(this);
     return S_OK;
   }
@@ -82,7 +82,7 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::GetAdapterIdentifier(
         D3DADAPTER_IDENTIFIER9* pIdentifier) {
   d3d8::D3DADAPTER_IDENTIFIER8 identifier8;
   HRESULT hr = m_d3d8->GetAdapterIdentifier(Adapter, Flags, &identifier8);
-  if (FAILED(hr))
+  if (unlikely(FAILED(hr)))
     return hr;
 
   strncpy(pIdentifier->Driver, identifier8.Driver, MAX_DEVICE_IDENTIFIER_STRING);
@@ -208,12 +208,12 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::GetDeviceCaps(
         UINT       Adapter,
         D3DDEVTYPE DeviceType,
         D3DCAPS9*  pCaps) {
-  if (pCaps == nullptr)
+  if (unlikely(pCaps == nullptr))
     return D3DERR_INVALIDCALL;
 
   d3d8::D3DCAPS8 caps8;
   HRESULT hr = m_d3d8->GetDeviceCaps(Adapter, d3d8::D3DDEVTYPE(DeviceType), &caps8);
-  if (FAILED(hr))
+  if (unlikely(FAILED(hr)))
     return hr;
 
   ConvertCaps9(caps8, pCaps);
@@ -232,7 +232,7 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CreateDevice(
         DWORD                  BehaviorFlags,
         D3DPRESENT_PARAMETERS* pPresentationParameters,
         IDirect3DDevice9**     ppReturnedDeviceInterface) {
-  if (ppReturnedDeviceInterface == nullptr)
+  if (unlikely(ppReturnedDeviceInterface == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppReturnedDeviceInterface);
@@ -243,7 +243,7 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CreateDevice(
   HRESULT hr = m_d3d8->CreateDevice(Adapter, static_cast<d3d8::D3DDEVTYPE>(DeviceType),
                                     hFocusWindow, BehaviorFlags, &params8,
                                     &d3d8Device);
-  if (FAILED(hr)) {
+  if (unlikely(FAILED(hr))) {
     Logger::warn("D3D9Interface::CreateDevice: Failed to create D3D8 device");
     return hr;
   }

@@ -13,15 +13,15 @@ D3D9Texture2D::~D3D9Texture2D() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Texture2D::QueryInterface(REFIID riid, void** ppvObject) {
-  if (ppvObject == nullptr)
+  if (unlikely(ppvObject == nullptr))
     return E_POINTER;
 
-  *ppvObject = nullptr;
+  ClearReturnPointer(ppvObject);
 
-  if (riid == __uuidof(IUnknown)
-   || riid == __uuidof(IDirect3DResource9)
-   || riid == __uuidof(IDirect3DBaseTexture9)
-   || riid == __uuidof(IDirect3DTexture9)) {
+  if (likely(riid == __uuidof(IUnknown)
+          || riid == __uuidof(IDirect3DResource9)
+          || riid == __uuidof(IDirect3DBaseTexture9)
+          || riid == __uuidof(IDirect3DTexture9))) {
     *ppvObject = ref(this);
     return S_OK;
   }
@@ -36,12 +36,12 @@ D3DRESOURCETYPE STDMETHODCALLTYPE D3D9Texture2D::GetType() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Texture2D::GetLevelDesc(UINT Level, D3DSURFACE_DESC *pDesc) {
-  if (pDesc == nullptr)
+  if (unlikely(pDesc == nullptr))
     return D3DERR_INVALIDCALL;
 
   d3d8::D3DSURFACE_DESC d3d8SurfDesc;
   HRESULT hr = m_d3d8->GetLevelDesc(Level, &d3d8SurfDesc);
-  if (FAILED(hr))
+  if (unlikely(FAILED(hr)))
     return hr;
 
   D3DSURFACE_DESC d3d9SurfDesc = ConvertSurfaceDesc8(&d3d8SurfDesc);
@@ -52,14 +52,14 @@ HRESULT STDMETHODCALLTYPE D3D9Texture2D::GetLevelDesc(UINT Level, D3DSURFACE_DES
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Texture2D::GetSurfaceLevel(UINT Level, IDirect3DSurface9** ppSurfaceLevel) {
-  if (ppSurfaceLevel == nullptr)
+  if (unlikely(ppSurfaceLevel == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppSurfaceLevel);
 
   ComObject<d3d8::IDirect3DSurface8> d3d8SurfaceLevel;
   HRESULT hr = m_d3d8->GetSurfaceLevel(Level, &d3d8SurfaceLevel);
-  if (FAILED(hr)) {
+  if (unlikely(FAILED(hr))) {
     Logger::debug("D3D9Texture2D::GetSurfaceLevel: Failed to get D3D8 surface level");
     return hr;
   }
@@ -90,15 +90,15 @@ D3D9TextureCube::~D3D9TextureCube() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9TextureCube::QueryInterface(REFIID riid, void** ppvObject) {
-  if (ppvObject == nullptr)
+  if (unlikely(ppvObject == nullptr))
     return E_POINTER;
 
-  *ppvObject = nullptr;
+  ClearReturnPointer(ppvObject);
 
-  if (riid == __uuidof(IUnknown)
-   || riid == __uuidof(IDirect3DResource9)
-   || riid == __uuidof(IDirect3DBaseTexture9)
-   || riid == __uuidof(IDirect3DCubeTexture9)) {
+  if (likely(riid == __uuidof(IUnknown)
+          || riid == __uuidof(IDirect3DResource9)
+          || riid == __uuidof(IDirect3DBaseTexture9)
+          || riid == __uuidof(IDirect3DCubeTexture9))) {
     *ppvObject = ref(this);
     return S_OK;
   }
@@ -113,12 +113,12 @@ D3DRESOURCETYPE STDMETHODCALLTYPE D3D9TextureCube::GetType() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9TextureCube::GetLevelDesc(UINT Level, D3DSURFACE_DESC *pDesc) {
-  if (pDesc == nullptr)
+  if (unlikely(pDesc == nullptr))
     return D3DERR_INVALIDCALL;
 
   d3d8::D3DSURFACE_DESC d3d8SurfDesc;
   HRESULT hr = m_d3d8->GetLevelDesc(Level, &d3d8SurfDesc);
-  if (FAILED(hr))
+  if (unlikely(FAILED(hr)))
     return hr;
 
   D3DSURFACE_DESC d3d9SurfDesc = ConvertSurfaceDesc8(&d3d8SurfDesc);
@@ -132,14 +132,14 @@ HRESULT STDMETHODCALLTYPE D3D9TextureCube::GetCubeMapSurface(
     D3DCUBEMAP_FACES    Face,
     UINT                Level,
     IDirect3DSurface9** ppSurfaceLevel) {
-  if (ppSurfaceLevel == nullptr)
+  if (unlikely(ppSurfaceLevel == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppSurfaceLevel);
 
   ComObject<d3d8::IDirect3DSurface8> d3d8SurfaceLevel;
   HRESULT hr = m_d3d8->GetCubeMapSurface(d3d8::D3DCUBEMAP_FACES(Face), Level, &d3d8SurfaceLevel);
-  if (FAILED(hr))
+  if (unlikely(FAILED(hr)))
     return hr;
 
   *ppSurfaceLevel = ref(new D3D9Surface(m_device, std::move(d3d8SurfaceLevel), this));
@@ -174,15 +174,15 @@ D3D9Texture3D::~D3D9Texture3D() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Texture3D::QueryInterface(REFIID riid, void** ppvObject) {
-  if (ppvObject == nullptr)
+  if (unlikely(ppvObject == nullptr))
     return E_POINTER;
 
-  *ppvObject = nullptr;
+  ClearReturnPointer(ppvObject);
 
-  if (riid == __uuidof(IUnknown)
-   || riid == __uuidof(IDirect3DResource9)
-   || riid == __uuidof(IDirect3DBaseTexture9)
-   || riid == __uuidof(IDirect3DVolumeTexture9)) {
+  if (likely(riid == __uuidof(IUnknown)
+          || riid == __uuidof(IDirect3DResource9)
+          || riid == __uuidof(IDirect3DBaseTexture9)
+          || riid == __uuidof(IDirect3DVolumeTexture9))) {
     *ppvObject = ref(this);
     return S_OK;
   }
@@ -202,14 +202,14 @@ HRESULT STDMETHODCALLTYPE D3D9Texture3D::GetLevelDesc(UINT Level, D3DVOLUME_DESC
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Texture3D::GetVolumeLevel(UINT Level, IDirect3DVolume9** ppSurfaceLevel) {
-  if (ppSurfaceLevel == nullptr)
+  if (unlikely(ppSurfaceLevel == nullptr))
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppSurfaceLevel);
 
   ComObject<d3d8::IDirect3DVolume8> d3d8VolumeLevel;
   HRESULT hr = m_d3d8->GetVolumeLevel(Level, &d3d8VolumeLevel);
-  if (FAILED(hr)) {
+  if (unlikely(FAILED(hr))) {
     Logger::debug("D3D9Texture2D::GetVolumeLevel: Failed to get D3D8 volume level");
     return hr;
   }

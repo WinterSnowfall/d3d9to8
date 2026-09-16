@@ -1,5 +1,6 @@
 #pragma once
 
+#include <d3d9_include.h>
 #include <d3d9_options.h>
 
 using Logger = ThreadSafeLogger;
@@ -9,7 +10,7 @@ inline void ConvertCaps9(const d3d8::D3DCAPS8& caps8, D3DCAPS9* pCaps9) {
   memset(pCaps9, 0, sizeof(D3DCAPS9));
   memcpy(pCaps9, &caps8, sizeof(d3d8::D3DCAPS8));
 
-  if (!D3D9TO8_LENIENT_SHADERS) {
+  if (likely(!D3D9TO8_LENIENT_SHADERS)) {
     // ensure we report only D3D8-level VS/PS caps at best
     if (pCaps9->VertexShaderVersion > D3DVS_VERSION(1, 1))
       pCaps9->VertexShaderVersion = D3DVS_VERSION(1, 1);

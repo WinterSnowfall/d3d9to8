@@ -9,13 +9,13 @@ D3D9Query::~D3D9Query() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Query::QueryInterface(REFIID riid, void** ppvObject) {
-  if (ppvObject == nullptr)
+  if (unlikely(ppvObject == nullptr))
     return E_POINTER;
 
-  *ppvObject = nullptr;
+  ClearReturnPointer(ppvObject);
 
-  if (riid == __uuidof(IUnknown)
-   || riid == __uuidof(IDirect3DQuery9)) {
+  if (likely(riid == __uuidof(IUnknown)
+          || riid == __uuidof(IDirect3DQuery9))) {
     *ppvObject = ref(this);
     return S_OK;
   }
@@ -54,10 +54,10 @@ HRESULT STDMETHODCALLTYPE D3D9Query::Issue(DWORD dwIssueFlags) {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Query::GetData(void* pData, DWORD dwSize, DWORD dwGetDataFlags) {
-  if (pData == nullptr && dwSize != 0)
+  if (unlikely(pData == nullptr && dwSize != 0))
     return D3DERR_INVALIDCALL;
 
-  if (pData != nullptr) {
+  if (likely(pData != nullptr)) {
     switch (m_queryType) {
       case D3DQUERYTYPE_EVENT:
         *static_cast<BOOL*>(pData) = true;
