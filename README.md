@@ -1,22 +1,24 @@
 ﻿# d3d9to8
 
-An experimental demake layer from the more "modern" D3D9 to D3D8, wherever/however possible. Support is currently limited to fixed-function only D3D9 titles.
+An experimental demake layer from the more "modern" D3D9 to D3D8, wherever/however possible.
 
 Not to be confused with the much more useful [d3d8to9](https://github.com/crosire/d3d8to9). This wrapper goes the other way around, against all logic and common sense.
 
 Known limitations include:
 - D3D9Ex, though it might be convinced to work to some degree at a later date
 - Use of any SM2+ programmable shaders
+- Use of SM1 declarations with unsupported register types (e.g. `D3DDECLUSAGE_TANGENT`)
 - Calls to `StretchRect` that actually do stretching (the vast majority will)
 - Surface calls to `GetDC`/`ReleaseDC`
 - Use of various D3D9 exclusive sampler/texture stage states
 - Surface/texture formats unique to D3D9, such as `D3DFMT_A16B16G16R16F`
 - Multiple swapchain use (thankfully, it is rare even in D3D9)
+- Use of various D3D9 exclusive render states which directly impact rendering
 - `SetStreamSource` calls using offsets
 - `SetStreamSourceFreq` calls, used for instancing
 - Use of multiple simultaneous render targets
-- `DrawIndexedPrimitive` calls using a negative `BaseVertexIndex` (should be relatively rare)
-- Other minor D3D9 exclusive API calls
+- `DrawIndexedPrimitive` calls using a negative `BaseVertexIndex` (should be quite rare)
+- Other minor D3D9 exclusive API calls, with specific paths which can't be implemented in D3D8
 
 > [!IMPORTANT]
 > Please don't submit issues or treat this as a serious project, because it's not. It will work at times, especially with early D3D9 games, but in the vast majority of cases it's not expected to work properly/correctly. Its purpose is mainly for testing and bringing otherworldly things into existence, such as 64-bit D3D8.
@@ -31,7 +33,6 @@ Why the dark forces of Chaos, of course. No, it was my love for D3D8 mostly, and
 
 Among known fully working titles, I can mention:
 - _W40K: Dawn of War_ (the original tetralogy, including _Soulstorm_)
-- _Torchlight II_
 - _Vampire: The Masquerade - Bloodlines_ (with the unofficial patch)
 - _Aliens versus Predator (Classic 2000)_
 - _Gun_
