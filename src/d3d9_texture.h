@@ -21,12 +21,11 @@ public:
   }
 
   void STDMETHODCALLTYPE GenerateMipSubLevels() final {
-    Logger::warn("D3D9BaseTexture::GenerateMipSubLevels: Unsupported call!");
+    Logger::debug("D3D9BaseTexture::GenerateMipSubLevels: Unsupported call!");
   }
 
-  // This doesn't map to anything in D3D8, but let's at least save the value
   HRESULT STDMETHODCALLTYPE SetAutoGenFilterType(D3DTEXTUREFILTERTYPE FilterType) final {
-    Logger::warn("D3D9BaseTexture::SetAutoGenFilterType: Unsupported call!");
+    Logger::debug("D3D9BaseTexture::SetAutoGenFilterType: Unsupported call!");
 
     m_autoGenFilterType = FilterType;
 
@@ -34,7 +33,7 @@ public:
   }
 
   D3DTEXTUREFILTERTYPE STDMETHODCALLTYPE GetAutoGenFilterType() final {
-    Logger::warn("D3D9BaseTexture::GetAutoGenFilterType: Unsupported call!");
+    Logger::debug("D3D9BaseTexture::GetAutoGenFilterType: Unsupported call!");
     return m_autoGenFilterType;
   }
 

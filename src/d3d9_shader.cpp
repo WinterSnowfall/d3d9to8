@@ -12,8 +12,9 @@ D3D9VertexShader::D3D9VertexShader(IDirect3DDevice9* device, DWORD handle, const
       m_function.push_back(*ptr);
       ptr++;
     }
-
     m_function.push_back(D3DVS_END());
+
+    ConvertD3D9Function(&m_function8, &m_function);
   }
 }
 

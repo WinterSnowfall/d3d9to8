@@ -257,13 +257,6 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateTexture(
 
   ClearReturnPointer(ppTexture);
 
-  //Logger::debug("D3D9Device::CreateTexture: Width:  " + std::to_string(Width));
-  //Logger::debug("D3D9Device::CreateTexture: Height: " + std::to_string(Height));
-  //Logger::debug("D3D9Device::CreateTexture: Levels: " + std::to_string(Levels));
-  //Logger::debug("D3D9Device::CreateTexture: Usage:  " + std::to_string(Usage));
-  //Logger::debug("D3D9Device::CreateTexture: Format: " + std::to_string(Format));
-  //Logger::debug("D3D9Device::CreateTexture: Pool:   " + std::to_string(Pool));
-
   if (unlikely(IsUnsupportedD3D9Format(Format)))
     Logger::err("D3D9Device::CreateTexture: Use of unsupported format: " + std::to_string(Format));
 
@@ -273,6 +266,14 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateTexture(
                                      &d3d8Texture);
   if (unlikely(FAILED(hr))) {
     Logger::warn("D3D9Device::CreateTexture: Failed to create D3D8 texture");
+
+  //Logger::debug("D3D9Device::CreateTexture: Width:  " + std::to_string(Width));
+  //Logger::debug("D3D9Device::CreateTexture: Height: " + std::to_string(Height));
+  //Logger::debug("D3D9Device::CreateTexture: Levels: " + std::to_string(Levels));
+  //Logger::debug("D3D9Device::CreateTexture: Usage:  " + std::to_string(Usage));
+  //Logger::debug("D3D9Device::CreateTexture: Format: " + std::to_string(Format));
+  //Logger::debug("D3D9Device::CreateTexture: Pool:   " + std::to_string(Pool));
+
     return hr;
   }
 
@@ -296,14 +297,6 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVolumeTexture(
 
   ClearReturnPointer(ppVolumeTexture);
 
-  //Logger::debug("D3D9Device::CreateVolumeTexture: Width:  " + std::to_string(Width));
-  //Logger::debug("D3D9Device::CreateVolumeTexture: Height: " + std::to_string(Height));
-  //Logger::debug("D3D9Device::CreateVolumeTexture: Depth:  " + std::to_string(Depth));
-  //Logger::debug("D3D9Device::CreateVolumeTexture: Levels: " + std::to_string(Levels));
-  //Logger::debug("D3D9Device::CreateVolumeTexture: Usage:  " + std::to_string(Usage));
-  //Logger::debug("D3D9Device::CreateVolumeTexture: Format: " + std::to_string(Format));
-  //Logger::debug("D3D9Device::CreateVolumeTexture: Pool:   " + std::to_string(Pool));
-
   if (unlikely(IsUnsupportedD3D9Format(Format)))
     Logger::err("D3D9Device::CreateVolumeTexture: Use of unsupported format: " + std::to_string(Format));
 
@@ -313,6 +306,15 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVolumeTexture(
                                            &d3d8VolumeTexture);
   if (unlikely(FAILED(hr))) {
     Logger::warn("D3D9Device::CreateVolumeTexture: Failed to create D3D8 volume texture");
+
+  //Logger::debug("D3D9Device::CreateVolumeTexture: Width:  " + std::to_string(Width));
+  //Logger::debug("D3D9Device::CreateVolumeTexture: Height: " + std::to_string(Height));
+  //Logger::debug("D3D9Device::CreateVolumeTexture: Depth:  " + std::to_string(Depth));
+  //Logger::debug("D3D9Device::CreateVolumeTexture: Levels: " + std::to_string(Levels));
+  //Logger::debug("D3D9Device::CreateVolumeTexture: Usage:  " + std::to_string(Usage));
+  //Logger::debug("D3D9Device::CreateVolumeTexture: Format: " + std::to_string(Format));
+  //Logger::debug("D3D9Device::CreateVolumeTexture: Pool:   " + std::to_string(Pool));
+
     return hr;
   }
 
@@ -334,12 +336,6 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateCubeTexture(
 
   ClearReturnPointer(ppCubeTexture);
 
-  //Logger::debug("D3D9Device::CreateCubeTexture: EdgeLength:  " + std::to_string(EdgeLength));
-  //Logger::debug("D3D9Device::CreateCubeTexture: Levels:      " + std::to_string(Levels));
-  //Logger::debug("D3D9Device::CreateCubeTexture: Usage:       " + std::to_string(Usage));
-  //Logger::debug("D3D9Device::CreateCubeTexture: Format:      " + std::to_string(Format));
-  //Logger::debug("D3D9Device::CreateCubeTexture: Pool:        " + std::to_string(Pool));
-
   if (unlikely(IsUnsupportedD3D9Format(Format)))
     Logger::err("D3D9Device::CreateCubeTexture: Use of unsupported format: " + std::to_string(Format));
 
@@ -349,6 +345,13 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateCubeTexture(
                                          &d3d8CubeTexture);
   if (unlikely(FAILED(hr))) {
     Logger::warn("D3D9Device::CreateCubeTexture: Failed to create D3D8 cube texture");
+
+  //Logger::debug("D3D9Device::CreateCubeTexture: EdgeLength:  " + std::to_string(EdgeLength));
+  //Logger::debug("D3D9Device::CreateCubeTexture: Levels:      " + std::to_string(Levels));
+  //Logger::debug("D3D9Device::CreateCubeTexture: Usage:       " + std::to_string(Usage));
+  //Logger::debug("D3D9Device::CreateCubeTexture: Format:      " + std::to_string(Format));
+  //Logger::debug("D3D9Device::CreateCubeTexture: Pool:        " + std::to_string(Pool));
+
     return hr;
   }
 
@@ -431,6 +434,14 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateRenderTarget(
                                           Lockable, &d3d8RenderTarget);
   if (unlikely(FAILED(hr))) {
     Logger::warn("D3D9Device::CreateRenderTarget: Failed to create D3D8 render target surface");
+
+  //Logger::debug("D3D9Device::CreateRenderTarget: Width:        " + std::to_string(Width));
+  //Logger::debug("D3D9Device::CreateRenderTarget: Height:       " + std::to_string(Height));
+  //Logger::debug("D3D9Device::CreateRenderTarget: Format:       " + std::to_string(Format));
+  //Logger::debug("D3D9Device::CreateRenderTarget: MultiSample:  " + std::to_string(MultiSample));
+  //Logger::debug("D3D9Device::CreateRenderTarget: MultisampleQ: " + std::to_string(MultisampleQuality));
+  //Logger::debug("D3D9Device::CreateRenderTarget: Lockable:     " + std::to_string(Lockable));
+
     return hr;
   }
 
@@ -463,6 +474,14 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateDepthStencilSurface(
                                                  &d3d8DepthStencil);
   if (unlikely(FAILED(hr))) {
     Logger::warn("D3D9Device::CreateDepthStencilSurface: Failed to create D3D8 depth stencil surface");
+
+  //Logger::debug("D3D9Device::CreateDepthStencilSurface: Width:        " + std::to_string(Width));
+  //Logger::debug("D3D9Device::CreateDepthStencilSurface: Height:       " + std::to_string(Height));
+  //Logger::debug("D3D9Device::CreateDepthStencilSurface: Format:       " + std::to_string(Format));
+  //Logger::debug("D3D9Device::CreateDepthStencilSurface: MultiSample:  " + std::to_string(MultiSample));
+  //Logger::debug("D3D9Device::CreateDepthStencilSurface: MultisampleQ: " + std::to_string(MultisampleQuality));
+  //Logger::debug("D3D9Device::CreateDepthStencilSurface: Discard:      " + std::to_string(Discard));
+
     return hr;
   }
 
@@ -646,12 +665,12 @@ HRESULT STDMETHODCALLTYPE D3D9Device::ColorFill(
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::CreateOffscreenPlainSurface(
-  UINT Width,
-  UINT Height,
-  D3DFORMAT Format,
-  D3DPOOL Pool,
-  IDirect3DSurface9** ppSurface,
-  HANDLE* pSharedHandle) {
+        UINT Width,
+        UINT Height,
+        D3DFORMAT Format,
+        D3DPOOL Pool,
+        IDirect3DSurface9** ppSurface,
+        HANDLE* pSharedHandle) {
   if (unlikely(ppSurface == nullptr))
     return D3DERR_INVALIDCALL;
 
@@ -666,6 +685,12 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateOffscreenPlainSurface(
                                           &d3d8OffscreenSurface);
   if (unlikely(FAILED(hr))) {
     Logger::warn("D3D9Device::CreateOffscreenPlainSurface: Failed to create D3D8 offscreen surface");
+
+  //Logger::debug("D3D9Device::CreateOffscreenPlainSurface: Width:  " + std::to_string(Width));
+  //Logger::debug("D3D9Device::CreateOffscreenPlainSurface: Height: " + std::to_string(Height));
+  //Logger::debug("D3D9Device::CreateOffscreenPlainSurface: Format: " + std::to_string(Format));
+  //Logger::debug("D3D9Device::CreateOffscreenPlainSurface: Pool:   " + std::to_string(Pool));
+
     return hr;
   }
 
@@ -965,6 +990,9 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetTexture(DWORD Stage, IDirect3DBaseTextu
   if (unlikely(ppTexture == nullptr))
     return D3DERR_INVALIDCALL;
 
+  if (unlikely(Stage >= D3D9TO8_MAX_TEXTURE_STAGES))
+    return D3DERR_INVALIDCALL;
+
   *ppTexture = m_textures[Stage].ref();
 
   return D3D_OK;
@@ -974,6 +1002,9 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetTexture(DWORD Stage, IDirect3DBaseTextu
   std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
   if (m_isMultitheaded)
     deviceLock.lock();
+
+  if (unlikely(Stage >= D3D9TO8_MAX_TEXTURE_STAGES))
+    return D3DERR_INVALIDCALL;
 
   D3D9Texture2D* texture9 = reinterpret_cast<D3D9Texture2D*>(pTexture);
 
@@ -1247,7 +1278,12 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVertexDeclaration(
 
   ClearReturnPointer(ppDecl);
 
-  *ppDecl = ref(new D3D9VertexDecl(this, pVertexElements));
+  // We don't generate a D3D8 vertex shader here, as we need to consolidate
+  // things on D3D8 side during SetVertexShader calls, while also using the
+  // currently set vertex shader function (if it's not a FF shader).
+  //
+  // TODO: Cache the D3D8 objects for quick reuse during SetVertexShader().
+  *ppDecl = ref(new D3D9VertexDecl(this, 0u, pVertexElements));
 
   return D3D_OK;
 }
@@ -1257,10 +1293,54 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexDeclaration(IDirect3DVertexDeclar
   if (m_isMultitheaded)
     deviceLock.lock();
 
-  Logger::warn("D3D9Device::SetVertexDeclaration: Stub!");
+  D3D9VertexDecl* vertexDecl = reinterpret_cast<D3D9VertexDecl*>(pDecl);
 
-  // TODO: Create a new D3D8 shader with the declaration and existing VS function
-  m_vertexDecl = reinterpret_cast<D3D9VertexDecl*>(pDecl);
+  // TODO: Cache the declaration + shader combination and handle, instead
+  // of clearing the set handle and recreating a new shader each time
+  const DWORD previousHandle = m_vertexShaderHandle;
+
+  if (pDecl != nullptr) {
+    if (m_vertexShader == nullptr) {
+      // This will create a handle for a FF shader, with only a pDeclaration
+      HRESULT hr = m_d3d8->CreateVertexShader(vertexDecl->GetD3D8VertexElements()->data(),
+                                              nullptr, &m_vertexShaderHandle, 0);
+      if (unlikely(FAILED(hr))) {
+        Logger::warn("D3D9Device::CreateVertexDeclaration: Failed to create D3D8 vertex shader");
+        if (likely(!D3D9TO8_LENIENT_SHADERS))
+          return hr;
+      }
+
+      hr = m_d3d8->SetVertexShader(m_vertexShaderHandle);
+      if (unlikely(FAILED(hr))) {
+        Logger::warn("D3D9Device::SetVertexDeclaration: Failed to set D3D8 vertex shader");
+        return hr;
+      }
+    } else {
+      HRESULT hr = m_d3d8->CreateVertexShader(vertexDecl->GetD3D8VertexElements()->data(),
+                                              m_vertexShader->GetD3D8Function()->data(),
+                                              &m_vertexShaderHandle, 0);
+      if (unlikely(FAILED(hr))) {
+        Logger::warn("D3D9Device::SetVertexDeclaration: Failed to create D3D8 vertex shader");
+        if (likely(!D3D9TO8_LENIENT_SHADERS))
+          return hr;
+      }
+
+      hr = m_d3d8->SetVertexShader(m_vertexShaderHandle);
+      if (unlikely(FAILED(hr))) {
+        Logger::warn("D3D9Device::SetVertexDeclaration: Failed to set D3D8 vertex shader");
+        if (likely(!D3D9TO8_LENIENT_SHADERS))
+          return hr;
+      }
+    }
+  } else {
+    m_d3d8->SetVertexShader(0);
+    m_vertexShaderHandle = 0;
+  }
+
+  if (previousHandle != 0u)
+    m_d3d8->DeleteVertexShader(previousHandle);
+
+  m_vertexDecl = vertexDecl;
 
   return D3D_OK;
 }
@@ -1317,16 +1397,12 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVertexShader(
     return D3DERR_INVALIDCALL;
   }
 
-  DWORD handle = 0u;
-  // TODO: Create a new D3D8 shader with the current declaration and existing VS function
-  HRESULT hr = m_d3d8->CreateVertexShader(nullptr, pFunction, &handle, 0);
-  if (unlikely(FAILED(hr))) {
-    Logger::warn("D3D9Device::CreateVertexShader: Failed to create D3D8 vertex shader");
-    if (likely(!D3D9TO8_LENIENT_SHADERS))
-      return hr;
-  }
-
-  *ppShader = ref(new D3D9VertexShader(this, handle, pFunction));
+  // We don't generate a D3D8 vertex shader here, as we need to consolidate
+  // things on D3D8 side during SetVertexShader calls, while also using the
+  // currently set vertex shader definition.
+  //
+  // TODO: Cache the D3D8 objects for quick reuse during SetVertexShader().
+  *ppShader = ref(new D3D9VertexShader(this, 0u, pFunction));
 
   return D3D_OK;
 }
@@ -1338,15 +1414,39 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexShader(IDirect3DVertexShader9* pS
 
   D3D9VertexShader* vertexShader9 = reinterpret_cast<D3D9VertexShader*>(pShader);
 
+  // TODO: Cache the declaration + shader combination and handle, instead
+  // of clearing the set handle and recreating a new shader each time
+  const DWORD previousHandle = m_vertexShaderHandle;
+
   if (pShader != nullptr) {
-    HRESULT hr = m_d3d8->SetVertexShader(vertexShader9->GetD3D8VSHandle());
-    if (unlikely(FAILED(hr))) {
-      Logger::warn("D3D9Device::SetVertexShader: Failed to set D3D8 vertex shader");
-      return hr;
+    // Defer any operation until we have a valid m_vertexDecl set,
+    // otherwise a non-FF vertex shader creation will fail in D3D8
+    if (likely(m_vertexDecl != nullptr)) {
+      HRESULT hr = m_d3d8->CreateVertexShader(m_vertexDecl->GetD3D8VertexElements()->data(),
+                                              vertexShader9->GetD3D8Function()->data(),
+                                              &m_vertexShaderHandle, 0);
+      if (unlikely(FAILED(hr))) {
+        Logger::warn("D3D9Device::SetVertexShader: Failed to create D3D8 vertex shader");
+        if (likely(!D3D9TO8_LENIENT_SHADERS))
+          return hr;
+      }
+
+      hr = m_d3d8->SetVertexShader(m_vertexShaderHandle);
+      if (unlikely(FAILED(hr))) {
+        Logger::warn("D3D9Device::SetVertexShader: Failed to set D3D8 vertex shader");
+        if (likely(!D3D9TO8_LENIENT_SHADERS))
+          return hr;
+      }
     }
   } else {
+    // TODO: Also handle situations where a FVF definition exists and
+    // we may want to revert to it in the absence of a programmable shader
     m_d3d8->SetVertexShader(0);
+    m_vertexShaderHandle = 0;
   }
+
+  if (previousHandle != 0u)
+    m_d3d8->DeleteVertexShader(previousHandle);
 
   m_vertexShader = vertexShader9;
 
@@ -1386,7 +1486,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexShaderConstantI(
         UINT StartRegister,
   const int* pConstantData,
         UINT Vector4iCount) {
-  Logger::err("D3D9Device::SetVertexShaderConstantI: Unsupported call!");
+  if (Vector4iCount && pConstantData != nullptr)
+    Logger::err("D3D9Device::SetVertexShaderConstantI: Unsupported call!");
   return D3D_OK;
 }
 
@@ -1408,7 +1509,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexShaderConstantB(
         UINT  StartRegister,
   const BOOL* pConstantData,
         UINT  BoolCount) {
-  Logger::err("D3D9Device::SetVertexShaderConstantB: Unsupported call!");
+  if (BoolCount && pConstantData != nullptr)
+    Logger::err("D3D9Device::SetVertexShaderConstantB: Unsupported call!");
   return D3D_OK;
 }
 
@@ -1624,7 +1726,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetPixelShaderConstantI(
   UINT StartRegister,
   const int* pConstantData,
   UINT Vector4iCount) {
-  Logger::err("D3D9Device::SetPixelShaderConstantI: Unsupported call!");
+  if (Vector4iCount && pConstantData != nullptr)
+    Logger::err("D3D9Device::SetPixelShaderConstantI: Unsupported call!");
   return D3D_OK;
 }
 
@@ -1646,7 +1749,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetPixelShaderConstantB(
   UINT  StartRegister,
   const BOOL* pConstantData,
   UINT  BoolCount) {
-  Logger::err("D3D9Device::SetPixelShaderConstantB: Unsupported call!");
+  if (BoolCount && pConstantData != nullptr)
+    Logger::err("D3D9Device::SetPixelShaderConstantB: Unsupported call!");
   return D3D_OK;
 }
 

@@ -84,6 +84,13 @@ interface DECLSPEC_UUID("4B8AAAFA-140F-42BA-9131-597EAFAA2EAD") d3d8::IDirect3DV
 #define D3DVS_END()  0x0000FFFF
 #endif
 
+// D3D8 shader helpers
+#define D3DVSD_STREAM_D3D8(StreamNumber) \
+  (D3DVSD_MAKETOKENTYPE(d3d8::D3DVSD_TOKEN_STREAM) | (StreamNumber))
+
+#define D3DVSD_REG_D3D8(VertexRegister, Type) \
+  (D3DVSD_MAKETOKENTYPE(d3d8::D3DVSD_TOKEN_STREAMDATA) | ((Type) << D3DVSD_DATATYPESHIFT) | (VertexRegister))
+
 #ifdef __GNUC__
 #define likely(x) __builtin_expect(bool(x),1)
 #define unlikely(x) __builtin_expect(bool(x),0)

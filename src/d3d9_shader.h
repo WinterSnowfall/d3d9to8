@@ -4,6 +4,8 @@
 #include "d3d9_com_object.h"
 #include "d3d9_logger.h"
 
+#include "d3d9_shader_util.h"
+
 #include <vector>
 
 using Logger = ThreadSafeLogger;
@@ -33,10 +35,12 @@ public:
     return m_handle;
   }
 
-  // We may need to swap the linked D3D8 shader due to
-  // an update on either the declaration or function
   void UpdateD3D8VSHandle(DWORD handle) {
     m_handle = handle;
+  }
+
+  std::vector<DWORD>* GetD3D8Function() {
+    return &m_function8;
   }
 
 private:
@@ -46,6 +50,7 @@ private:
   DWORD              m_handle = 0;
 
   std::vector<DWORD> m_function;
+  std::vector<DWORD> m_function8;
 
 };
 

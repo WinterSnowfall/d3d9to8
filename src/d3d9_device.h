@@ -531,10 +531,11 @@ private:
 
   std::vector<ComObject<D3D9Surface, false>>  m_backBuffers;
 
-  ComObject<D3D9VertexShader, false>          m_vertexShader;
-  ComObject<D3D9PixelShader, false>           m_pixelShader;
-
+  DWORD                                       m_vertexShaderHandle = 0u;
   ComObject<D3D9VertexDecl, false>            m_vertexDecl;
+  ComObject<D3D9VertexShader, false>          m_vertexShader;
+
+  ComObject<D3D9PixelShader, false>           m_pixelShader;
 
   ComObject<D3D9IndexBuffer, false>           m_indices;
 
