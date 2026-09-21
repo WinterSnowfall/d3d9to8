@@ -60,13 +60,13 @@ inline void ConvertCaps9(const d3d8::D3DCAPS8& caps8, D3DCAPS9* pCaps9) {
                                  | D3DCAPS3_COPY_TO_VIDMEM
                                  | D3DCAPS3_COPY_TO_SYSTEMMEM;
 
-  pCaps9->PrimitiveMiscCaps     |= D3DPMISCCAPS_INDEPENDENTWRITEMASKS
+  //pCaps9->PrimitiveMiscCaps //|= D3DPMISCCAPS_FOGANDSPECULARALPHA
                               // | D3DPMISCCAPS_PERSTAGECONSTANT // Doesn't actually exist in D3D8
-                                 | D3DPMISCCAPS_FOGANDSPECULARALPHA
+                              // | D3DPMISCCAPS_INDEPENDENTWRITEMASKS // // The render states don't exist in D3D8
                               // | D3DPMISCCAPS_SEPARATEALPHABLEND // The render state doesn't exist in D3D8
                               // | D3DPMISCCAPS_MRTINDEPENDENTBITDEPTHS // MRT = multiple render targets
                               // | D3DPMISCCAPS_MRTPOSTPIXELSHADERBLENDING // MRT = multiple render targets
-                                 | D3DPMISCCAPS_FOGVERTEXCLAMPED;
+                              // | D3DPMISCCAPS_FOGVERTEXCLAMPED
                               // | D3DPMISCCAPS_POSTBLENDSRGBCONVERT; // "This flag is available in Direct3D 9Ex only."
 
   pCaps9->RasterCaps            |= D3DPRASTERCAPS_DEPTHBIAS

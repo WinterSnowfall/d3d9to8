@@ -119,7 +119,7 @@ inline void ConvertD3D9Function(std::vector<DWORD>* function8, std::vector<DWORD
 
     // Skip DCL instructions
     if (opCode == D3DSIO_DCL) {
-      // D3DSIO_DCL token + usage token + register token
+      // D3DSIO_DCL token + usage token + register token for SM1
       tokenIndex += 3u;
     } else {
       function8->push_back(function9->at(tokenIndex));

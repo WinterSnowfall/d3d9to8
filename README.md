@@ -31,6 +31,8 @@ Why the dark forces of Chaos, of course. No, it was my love for D3D8 mostly, and
 
 Among known fully working titles, I can mention:
 - _W40K: Dawn of War_ (the original tetralogy, including _Soulstorm_)
+- _Torchlight II_
+- _Vampire: The Masquerade - Bloodlines_ (with the unofficial patch)
 - _Aliens versus Predator (Classic 2000)_
 - _Gun_
 - _Emperor of the Fading Suns Enhanced_

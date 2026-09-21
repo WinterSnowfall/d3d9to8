@@ -59,10 +59,10 @@ HRESULT STDMETHODCALLTYPE D3D9Texture2D::GetSurfaceLevel(UINT Level, IDirect3DSu
 
   ComObject<d3d8::IDirect3DSurface8> d3d8SurfaceLevel;
   HRESULT hr = m_d3d8->GetSurfaceLevel(Level, &d3d8SurfaceLevel);
-  if (unlikely(FAILED(hr))) {
-    Logger::debug("D3D9Texture2D::GetSurfaceLevel: Failed to get D3D8 surface level");
+  // This will fail in a lot of cases, as applications will simply call
+  // it iteratively until a high enough Level value causes an error
+  if (unlikely(FAILED(hr)))
     return hr;
-  }
 
   *ppSurfaceLevel = ref(new D3D9Surface(m_device, std::move(d3d8SurfaceLevel), this));
 
@@ -209,10 +209,8 @@ HRESULT STDMETHODCALLTYPE D3D9Texture3D::GetVolumeLevel(UINT Level, IDirect3DVol
 
   ComObject<d3d8::IDirect3DVolume8> d3d8VolumeLevel;
   HRESULT hr = m_d3d8->GetVolumeLevel(Level, &d3d8VolumeLevel);
-  if (unlikely(FAILED(hr))) {
-    Logger::debug("D3D9Texture2D::GetVolumeLevel: Failed to get D3D8 volume level");
+  if (unlikely(FAILED(hr)))
     return hr;
-  }
 
   *ppSurfaceLevel = ref(new D3D9Volume(m_device, std::move(d3d8VolumeLevel), this));
 
