@@ -1,7 +1,8 @@
 #pragma once
 
-#include <d3d9_include.h>
-#include <d3d9_options.h>
+#include "d3d9_include.h"
+#include "d3d9_logger.h"
+#include "d3d9_options.h"
 
 using Logger = ThreadSafeLogger;
 
@@ -53,7 +54,7 @@ inline void ConvertCaps9(const d3d8::D3DCAPS8& caps8, D3DCAPS9* pCaps9) {
   //
   // add a few D3D9 caps which are missing in D3D8
   //
-  pCaps9->Caps2                 |= D3DCAPS2_CANAUTOGENMIPMAP;
+  //pCaps9->Caps2               |= D3DCAPS2_CANAUTOGENMIPMAP; // Doesn't exist in D3D8
 
   pCaps9->Caps3                 |= D3DCAPS3_LINEAR_TO_SRGB_PRESENTATION
                                  | D3DCAPS3_COPY_TO_VIDMEM
@@ -62,26 +63,26 @@ inline void ConvertCaps9(const d3d8::D3DCAPS8& caps8, D3DCAPS9* pCaps9) {
   pCaps9->PrimitiveMiscCaps     |= D3DPMISCCAPS_INDEPENDENTWRITEMASKS
                               // | D3DPMISCCAPS_PERSTAGECONSTANT // Doesn't actually exist in D3D8
                                  | D3DPMISCCAPS_FOGANDSPECULARALPHA
-                                 | D3DPMISCCAPS_SEPARATEALPHABLEND
-                                 | D3DPMISCCAPS_MRTINDEPENDENTBITDEPTHS
-                                 | D3DPMISCCAPS_MRTPOSTPIXELSHADERBLENDING
-                                 | D3DPMISCCAPS_FOGVERTEXCLAMPED
-                                 | D3DPMISCCAPS_POSTBLENDSRGBCONVERT;
+                              // | D3DPMISCCAPS_SEPARATEALPHABLEND // The render state doesn't exist in D3D8
+                              // | D3DPMISCCAPS_MRTINDEPENDENTBITDEPTHS // MRT = multiple render targets
+                              // | D3DPMISCCAPS_MRTPOSTPIXELSHADERBLENDING // MRT = multiple render targets
+                                 | D3DPMISCCAPS_FOGVERTEXCLAMPED;
+                              // | D3DPMISCCAPS_POSTBLENDSRGBCONVERT; // "This flag is available in Direct3D 9Ex only."
 
-  pCaps9->RasterCaps            |= D3DPRASTERCAPS_SLOPESCALEDEPTHBIAS
-                                 | D3DPRASTERCAPS_DEPTHBIAS
+  pCaps9->RasterCaps            |= D3DPRASTERCAPS_DEPTHBIAS
+                              // | D3DPRASTERCAPS_SLOPESCALEDEPTHBIAS // The render state doesn't exist in D3D8
                               // | D3DPRASTERCAPS_SCISSORTEST // There's no D3D8 equivalent
                                  | D3DPRASTERCAPS_MULTISAMPLE_TOGGLE;
 
-  pCaps9->SrcBlendCaps          |= D3DPBLENDCAPS_BLENDFACTOR;
+  //pCaps9->SrcBlendCaps          |= D3DPBLENDCAPS_BLENDFACTOR; // D3D9 exclusive
 
-  pCaps9->DestBlendCaps         |= D3DPBLENDCAPS_BLENDFACTOR;
+  //pCaps9->DestBlendCaps         |= D3DPBLENDCAPS_BLENDFACTOR; // D3D9 exclusive
 
   pCaps9->LineCaps              |= D3DLINECAPS_ANTIALIAS;
 
-  pCaps9->StencilCaps           |= D3DSTENCILCAPS_TWOSIDED;
+  //pCaps9->StencilCaps           |= D3DSTENCILCAPS_TWOSIDED; // The render states don't exist in D3D8
 
-  pCaps9->VertexProcessingCaps  |= D3DVTXPCAPS_TEXGEN_SPHEREMAP;
+  //pCaps9->VertexProcessingCaps  |= D3DVTXPCAPS_TEXGEN_SPHEREMAP; // D3DTSS_TCI_SPHEREMAP doesn't exist in D3D8
   //
   //
   //
@@ -227,6 +228,18 @@ inline d3d8::D3DTEXTURESTAGESTATETYPE GetTextureStateType8(const D3DSAMPLERSTATE
     // 25:
     case D3DSAMP_ADDRESSW:      return d3d8::D3DTSS_ADDRESSW;
     default:                    return d3d8::D3DTEXTURESTAGESTATETYPE(-1u);
+  }
+}
+
+inline void ConvertD3D9Usage(DWORD* usage, UINT* levels) {
+  switch (*usage) {
+    case D3DUSAGE_AUTOGENMIPMAP: // Doesn't exist in D3D8
+      Logger::debug("ConvertD3D9Usage:: Unsupported use of D3DUSAGE_AUTOGENMIPMAP");
+      *usage &= ~D3DUSAGE_AUTOGENMIPMAP;
+      *levels = 1u;
+      break;
+    default:
+      break;
   }
 }
 

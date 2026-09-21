@@ -260,6 +260,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateTexture(
   if (unlikely(IsUnsupportedD3D9Format(Format)))
     Logger::err("D3D9Device::CreateTexture: Use of unsupported format: " + std::to_string(Format));
 
+  ConvertD3D9Usage(&Usage, &Levels);
+
   ComObject<d3d8::IDirect3DTexture8> d3d8Texture;
   HRESULT hr = m_d3d8->CreateTexture(Width, Height, Levels, Usage,
                                      d3d8::D3DFORMAT(Format), d3d8::D3DPOOL(Pool),
@@ -300,6 +302,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVolumeTexture(
   if (unlikely(IsUnsupportedD3D9Format(Format)))
     Logger::err("D3D9Device::CreateVolumeTexture: Use of unsupported format: " + std::to_string(Format));
 
+  ConvertD3D9Usage(&Usage, &Levels);
+
   ComObject<d3d8::IDirect3DVolumeTexture8> d3d8VolumeTexture;
   HRESULT hr = m_d3d8->CreateVolumeTexture(Width, Height, Depth, Levels, Usage,
                                            d3d8::D3DFORMAT(Format), d3d8::D3DPOOL(Pool),
@@ -338,6 +342,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateCubeTexture(
 
   if (unlikely(IsUnsupportedD3D9Format(Format)))
     Logger::err("D3D9Device::CreateCubeTexture: Use of unsupported format: " + std::to_string(Format));
+
+  ConvertD3D9Usage(&Usage, &Levels);
 
   ComObject<d3d8::IDirect3DCubeTexture8> d3d8CubeTexture = nullptr;
   HRESULT hr = m_d3d8->CreateCubeTexture(EdgeLength, Levels, Usage,
