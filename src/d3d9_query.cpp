@@ -75,6 +75,10 @@ HRESULT STDMETHODCALLTYPE D3D9Query::GetData(void* pData, DWORD dwSize, DWORD dw
       case D3DQUERYTYPE_TIMESTAMPDISJOINT:
         *static_cast<BOOL*>(pData) = true;
         break;
+      case D3DQUERYTYPE_OCCLUSION:
+        Logger::warn("D3D9Query::GetData: Returning 0 for D3DQUERYTYPE_OCCLUSION");
+        *static_cast<DWORD*>(pData) = 0u;
+        break;
       case D3DQUERYTYPE_TIMESTAMPFREQ:
         memset(pData, 0, dwSize);
         break;

@@ -31,23 +31,31 @@ public:
     return D3D_OK;
   }
 
-  DWORD GetD3D8VSHandle() const {
-    return m_handle;
-  }
-
-  void UpdateD3D8VSHandle(DWORD handle) {
+  void SetVSHandle(DWORD handle) {
+    // Release any previously held shader handle
+    ClearVSHandle();
     m_handle = handle;
   }
 
-  std::vector<DWORD>* GetD3D8Function() {
+  DWORD GetVSHandle() const {
+    return m_handle;
+  }
+
+  std::vector<DWORD>* GetFunction9() {
+    return &m_function;
+  }
+
+  std::vector<DWORD>* GetFunction8() {
     return &m_function8;
   }
 
 private:
 
+  void ClearVSHandle();
+
   IDirect3DDevice9*  m_device = nullptr;
 
-  DWORD              m_handle = 0;
+  DWORD              m_handle = 0u;
 
   std::vector<DWORD> m_function;
   std::vector<DWORD> m_function8;
@@ -83,7 +91,7 @@ private:
 
   IDirect3DDevice9*  m_device = nullptr;
 
-  DWORD              m_handle = 0;
+  DWORD              m_handle = 0u;
 
   std::vector<DWORD> m_function;
 

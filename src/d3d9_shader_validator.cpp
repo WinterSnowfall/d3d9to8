@@ -14,7 +14,7 @@ HRESULT STDMETHODCALLTYPE D3D9ShaderValidator::Begin(
     D3D9ShaderValidatorCallback pCallback,
     void*                       pUserData,
     DWORD                       Unknown) {
-  Logger::debug("D3D9ShaderValidator::Begin: Stub!");
+  //Logger::debug("D3D9ShaderValidator::Begin: Stub!");
   return D3D_OK;
 }
 
@@ -23,12 +23,12 @@ HRESULT STDMETHODCALLTYPE D3D9ShaderValidator::Instruction(
           UINT   Line,
     const DWORD* pdwInst,
           DWORD  cdw) {
-  Logger::debug("D3D9ShaderValidator::Instruction: Stub!");
+  //Logger::debug("D3D9ShaderValidator::Instruction: Stub!");
   return D3D_OK;
 }
 
 HRESULT STDMETHODCALLTYPE D3D9ShaderValidator::End() {
-  Logger::debug("D3D9ShaderValidator::End: Stub!");
+  //Logger::debug("D3D9ShaderValidator::End: Stub!");
   return D3D_OK;
 }
 

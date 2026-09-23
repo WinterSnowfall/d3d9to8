@@ -74,7 +74,7 @@ HRESULT STDMETHODCALLTYPE D3D9SwapChain::GetBackBuffer(
   } else {
     ComObject<d3d8::IDirect3DSurface8> backBuffer8;
     HRESULT hr = m_d3d8->GetBackBuffer(iBackBuffer, d3d8::D3DBACKBUFFER_TYPE(Type), &backBuffer8);
-    if (FAILED(hr)) {
+    if (unlikely(FAILED(hr))) {
       Logger::warn("D3D9SwapChain::GetBackBuffer: Failed to get D3D8 back buffer");
       return hr;
     }

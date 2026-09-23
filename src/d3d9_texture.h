@@ -5,6 +5,9 @@
 #include "d3d9_resource.h"
 #include "d3d9_logger.h"
 
+#include <array>
+#include <vector>
+
 using Logger = ThreadSafeLogger;
 
 template <typename TextureType>
@@ -20,20 +23,19 @@ public:
   ~D3D9BaseTexture() {
   }
 
+  // Only used for D3DUSAGE_AUTOGEN textures, which we strip out,
+  // and this is only a driver hint to trigger generation anyway
   void STDMETHODCALLTYPE GenerateMipSubLevels() final {
-    Logger::debug("D3D9BaseTexture::GenerateMipSubLevels: Unsupported call!");
   }
 
+  // Only used for D3DUSAGE_AUTOGEN textures, which we strip out
   HRESULT STDMETHODCALLTYPE SetAutoGenFilterType(D3DTEXTUREFILTERTYPE FilterType) final {
-    Logger::debug("D3D9BaseTexture::SetAutoGenFilterType: Unsupported call!");
-
     m_autoGenFilterType = FilterType;
-
     return D3D_OK;
   }
 
+  // Only used for D3DUSAGE_AUTOGEN textures, which we strip out
   D3DTEXTUREFILTERTYPE STDMETHODCALLTYPE GetAutoGenFilterType() final {
-    Logger::debug("D3D9BaseTexture::GetAutoGenFilterType: Unsupported call!");
     return m_autoGenFilterType;
   }
 
@@ -61,7 +63,10 @@ class D3D9Texture2D : public D3D9BaseTexture<IDirect3DTexture9> {
 
 public:
 
-  D3D9Texture2D(IDirect3DDevice9* device, ComObject<d3d8::IDirect3DTexture8>&& d3d8Texture);
+  D3D9Texture2D(
+      IDirect3DDevice9* device,
+      ComObject<d3d8::IDirect3DTexture8>&& d3d8Texture,
+      UINT levels);
 
   ~D3D9Texture2D();
 
@@ -85,7 +90,9 @@ public:
 
 private:
 
-  ComObject<d3d8::IDirect3DTexture8> m_d3d8;
+  std::vector<ComObject<IDirect3DSurface9>> m_levels;
+
+  ComObject<d3d8::IDirect3DTexture8>        m_d3d8;
 
 };
 
@@ -93,7 +100,10 @@ class D3D9TextureCube : public D3D9BaseTexture<IDirect3DCubeTexture9> {
 
 public:
 
-  D3D9TextureCube(IDirect3DDevice9* device, ComObject<d3d8::IDirect3DCubeTexture8>&& d3d8CubeTexture);
+  D3D9TextureCube(
+      IDirect3DDevice9* device,
+      ComObject<d3d8::IDirect3DCubeTexture8>&& d3d8CubeTexture,
+      UINT levels);
 
   ~D3D9TextureCube();
 
@@ -125,7 +135,9 @@ public:
 
 private:
 
-  ComObject<d3d8::IDirect3DCubeTexture8> m_d3d8;
+  std::array<std::vector<ComObject<IDirect3DSurface9>>, 6> m_levels;
+
+  ComObject<d3d8::IDirect3DCubeTexture8>                   m_d3d8;
 
 };
 
@@ -133,7 +145,10 @@ class D3D9Texture3D : public D3D9BaseTexture<IDirect3DVolumeTexture9> {
 
 public:
 
-  D3D9Texture3D(IDirect3DDevice9* device, ComObject<d3d8::IDirect3DVolumeTexture8>&& d3d8VolumeTexture);
+  D3D9Texture3D(
+      IDirect3DDevice9* device,
+      ComObject<d3d8::IDirect3DVolumeTexture8>&& d3d8VolumeTexture,
+      UINT levels);
 
   ~D3D9Texture3D();
 
@@ -156,6 +171,8 @@ public:
   }
 
 private:
+
+  std::vector<ComObject<IDirect3DVolume9>> m_levels;
 
   ComObject<d3d8::IDirect3DVolumeTexture8> m_d3d8;
 

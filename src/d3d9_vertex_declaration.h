@@ -3,7 +3,6 @@
 #include "d3d9_include.h"
 #include "d3d9_com_object.h"
 #include "d3d9_logger.h"
-#include "d3d9_caps.h"
 
 #include "d3d9_shader_util.h"
 
@@ -36,23 +35,42 @@ public:
     return D3D_OK;
   }
 
-  DWORD GetD3D8VSHandle() const {
-    return m_handle;
-  }
-
-  void UpdateD3D8VSHandle(DWORD handle) {
+  void SetVSHandle(DWORD handle) {
+    // Release any previously held shader handle
+    ClearVSHandle();
     m_handle = handle;
   }
 
-  std::vector<DWORD>* GetD3D8VertexElements() {
+  DWORD GetVSHandle() const {
+    return m_handle;
+  }
+
+  std::vector<D3DVERTEXELEMENT9>* GetDeclaration9() {
+    return &m_vertexElements;
+  }
+
+  std::vector<DWORD>* GetDeclaration8() {
     return &m_vertexElements8;
+  }
+
+  void SetFunctionOrigin(IDirect3DVertexShader9* vertexShader) {
+    m_functionOrigin = vertexShader;
+  }
+
+  bool NeedsDefinitionUpdate(IDirect3DVertexShader9* vertexShader) const {
+    return m_vertexElements8.empty() || m_functionOrigin != vertexShader;
   }
 
 private:
 
+  void ClearVSHandle();
+
   IDirect3DDevice9*              m_device = nullptr;
 
   DWORD                          m_handle = 0;
+
+  // Stores a pointer to the VS which was used to generate the definition
+  IDirect3DVertexShader9*        m_functionOrigin = nullptr;
 
   std::vector<D3DVERTEXELEMENT9> m_vertexElements;
   std::vector<DWORD>             m_vertexElements8;

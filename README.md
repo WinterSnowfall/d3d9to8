@@ -7,7 +7,7 @@ Not to be confused with the much more useful [d3d8to9](https://github.com/crosir
 Known limitations include:
 - D3D9Ex, though it might be convinced to work to some degree at a later date
 - Use of any SM2+ programmable shaders
-- Use of SM1 declarations with unsupported register types (e.g. `D3DDECLUSAGE_TANGENT`)
+- Use of SM1 declarations with unsupported register types (e.g. `D3DDECLUSAGE_TANGENT`) or integer constants
 - Calls to `StretchRect` that actually do stretching (the vast majority will)
 - Surface calls to `GetDC`/`ReleaseDC`
 - Use of various D3D9 exclusive sampler/texture stage states

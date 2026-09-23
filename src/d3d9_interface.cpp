@@ -68,7 +68,6 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::QueryInterface(REFIID riid, void** ppvO
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Interface::RegisterSoftwareDevice(void* pInitializeFunction) {
-  Logger::warn("D3D9Interface::RegisterSoftwareDevice: Unsupported call!");
   return D3D_OK;
 }
 
@@ -126,7 +125,7 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CheckDeviceType(
         BOOL       bWindowed) {
   if (!IsSupportedD3D8AdapterFormat(AdapterFormat)) {
     Logger::debug("D3D9Interface::CheckDeviceType: Query for unsupported adapter format: " + std::to_string(AdapterFormat));
-    return D3DERR_INVALIDCALL;
+    return D3DERR_NOTAVAILABLE;
   }
 
   return m_d3d8->CheckDeviceType(Adapter, d3d8::D3DDEVTYPE(DevType),
@@ -143,13 +142,13 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CheckDeviceFormat(
         D3DFORMAT       CheckFormat) {
   if (!IsSupportedD3D8AdapterFormat(AdapterFormat)) {
     Logger::debug("D3D9Interface::CheckDeviceFormat: Query for unsupported adapter format: " + std::to_string(AdapterFormat));
-    return D3DERR_INVALIDCALL;
+    return D3DERR_NOTAVAILABLE;
   }
 
   if (IsUnsupportedD3D9Format(CheckFormat))
     Logger::debug("D3D9Interface::CheckDeviceFormat: Query for unsupported format: " + std::to_string(CheckFormat));
 
-  return m_d3d8->CheckDeviceFormat(
+  HRESULT hr = m_d3d8->CheckDeviceFormat(
     Adapter,
     (d3d8::D3DDEVTYPE)DeviceType,
     (d3d8::D3DFORMAT)AdapterFormat,
@@ -157,6 +156,16 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CheckDeviceFormat(
     (d3d8::D3DRESOURCETYPE)RType,
     (d3d8::D3DFORMAT)CheckFormat
   );
+  if (FAILED(hr))
+    return hr;
+
+  // Mip map autogeneration usage isn't available in D3D8
+  if (Usage & D3DUSAGE_AUTOGENMIPMAP) {
+    Logger::debug("D3D9Interface::CheckDeviceFormat: Query for unsupported D3DUSAGE_AUTOGENMIPMAP");
+    return D3DOK_NOAUTOGEN;
+  }
+
+  return D3D_OK;
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Interface::CheckDeviceMultiSampleType(
@@ -186,7 +195,7 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CheckDepthStencilMatch(
         D3DFORMAT  DepthStencilFormat) {
   if (!IsSupportedD3D8AdapterFormat(AdapterFormat)) {
     Logger::debug("D3D9Interface::CheckDepthStencilMatch: Query for unsupported adapter format: " + std::to_string(AdapterFormat));
-    return D3DERR_INVALIDCALL;
+    return D3DERR_NOTAVAILABLE;
   }
 
   return m_d3d8->CheckDepthStencilMatch(Adapter, d3d8::D3DDEVTYPE(DeviceType),
@@ -201,7 +210,7 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CheckDeviceFormatConversion(
         D3DFORMAT  SourceFormat,
         D3DFORMAT  TargetFormat) {
   Logger::warn("D3D9Interface::CheckDeviceFormatConversion: Unsupported call!");
-  return D3D_OK;
+  return D3DERR_NOTAVAILABLE;
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Interface::GetDeviceCaps(

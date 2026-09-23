@@ -6,23 +6,17 @@ D3D9VertexShader::D3D9VertexShader(IDirect3DDevice9* device, DWORD handle, const
   : m_device ( device )
   , m_handle ( handle ) {
   const DWORD* ptr = pFunction;
-
   if (likely(ptr != nullptr)) {
     while (*ptr != D3DVS_END()) {
       m_function.push_back(*ptr);
       ptr++;
     }
     m_function.push_back(D3DVS_END());
-
-    ConvertD3D9Function(&m_function8, &m_function);
   }
 }
 
 D3D9VertexShader::~D3D9VertexShader() {
-  if (likely(m_device != nullptr)) {
-    D3D9Device* d3d9Device = reinterpret_cast<D3D9Device*>(m_device);
-    d3d9Device->GetD3D8Device()->DeleteVertexShader(m_handle);
-  }
+  ClearVSHandle();
 }
 
 HRESULT STDMETHODCALLTYPE D3D9VertexShader::QueryInterface(REFIID riid, void** ppvObject) {
@@ -56,6 +50,13 @@ HRESULT STDMETHODCALLTYPE D3D9VertexShader::GetFunction(void* pOut, UINT* pSizeO
   return D3D_OK;
 }
 
+void D3D9VertexShader::ClearVSHandle() {
+  if (likely(m_handle && m_device != nullptr)) {
+    D3D9Device* d3d9Device = reinterpret_cast<D3D9Device*>(m_device);
+    d3d9Device->GetD3D8Device()->DeleteVertexShader(m_handle);
+  }
+}
+
 D3D9PixelShader::D3D9PixelShader(IDirect3DDevice9* device, DWORD handle, const DWORD* pFunction)
   : m_device ( device )
   , m_handle ( handle ) {
@@ -72,7 +73,7 @@ D3D9PixelShader::D3D9PixelShader(IDirect3DDevice9* device, DWORD handle, const D
 }
 
 D3D9PixelShader::~D3D9PixelShader() {
-  if (likely(m_device != nullptr)) {
+  if (likely(m_handle && m_device != nullptr)) {
     D3D9Device* d3d9Device = reinterpret_cast<D3D9Device*>(m_device);
     d3d9Device->GetD3D8Device()->DeletePixelShader(m_handle);
   }

@@ -515,10 +515,12 @@ private:
     m_d3d8->SetRenderState(d3d8::D3DRS_POINTSIZE_MIN, bitcast<DWORD>(1.0f));
   }
 
-  IDirect3D9*                                 m_intf;
+  bool                                        m_canSWVP        = false;
 
   std::mutex                                  m_deviceLock;
   bool                                        m_isMultitheaded = false;
+
+  IDirect3D9*                                 m_intf;
 
   ComObject<d3d8::IDirect3DDevice8>           m_d3d8;
 
@@ -531,7 +533,6 @@ private:
 
   std::vector<ComObject<D3D9Surface, false>>  m_backBuffers;
 
-  DWORD                                       m_vertexShaderHandle = 0u;
   ComObject<D3D9VertexDecl, false>            m_vertexDecl;
   ComObject<D3D9VertexShader, false>          m_vertexShader;
 

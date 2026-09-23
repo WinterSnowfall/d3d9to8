@@ -67,35 +67,35 @@ extern "C" {
   }
 
   DLLEXPORT int __stdcall D3DPERF_BeginEvent(D3DCOLOR col, LPCWSTR wszName) {
-    Logger::warn("D3DPERF_BeginEvent:: Stub!");
+    Logger::debug("D3DPERF_BeginEvent:: Stub!");
     return 0;
   }
 
   DLLEXPORT int __stdcall D3DPERF_EndEvent(void) {
-    Logger::warn("D3DPERF_EndEvent:: Stub!");
+    Logger::debug("D3DPERF_EndEvent:: Stub!");
     return 0;
   }
 
   DLLEXPORT void __stdcall D3DPERF_SetMarker(D3DCOLOR col, LPCWSTR wszName) {
-    Logger::warn("D3DPERF_SetMarker:: Stub!");
+    Logger::debug("D3DPERF_SetMarker:: Stub!");
   }
 
   DLLEXPORT void __stdcall D3DPERF_SetRegion(D3DCOLOR col, LPCWSTR wszName) {
-    Logger::warn("D3DPERF_SetRegion:: Stub!");
+    Logger::debug("D3DPERF_SetRegion:: Stub!");
   }
 
   DLLEXPORT BOOL __stdcall D3DPERF_QueryRepeatFrame(void) {
-    Logger::warn("D3DPERF_QueryRepeatFrame:: Stub!");
+    Logger::debug("D3DPERF_QueryRepeatFrame:: Stub!");
     return false;
   }
 
   DLLEXPORT void __stdcall D3DPERF_SetOptions(DWORD dwOptions) {
-    Logger::warn("D3DPERF_SetOptions:: Stub!");
+    Logger::debug("D3DPERF_SetOptions:: Stub!");
   }
 
   DLLEXPORT DWORD __stdcall D3DPERF_GetStatus(void) {
-    Logger::warn("D3DPERF_GetStatus:: Stub!");
-    return 0;
+    Logger::debug("D3DPERF_GetStatus:: Stub!");
+    return 0u;
   }
 
   DLLEXPORT void __stdcall DebugSetMute(void) {
@@ -114,6 +114,7 @@ extern "C" {
   }
 
   DLLEXPORT void* __stdcall Direct3DShaderValidatorCreate9(void) {
+    Logger::warn("Direct3DShaderValidatorCreate9:: Stub!");
     return ref(new D3D9ShaderValidator());
   }
 
