@@ -33,7 +33,13 @@ HRESULT STDMETHODCALLTYPE D3D9Volume::QueryInterface(REFIID riid, void** ppvObje
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Volume::GetDesc(D3DVOLUME_DESC *pDesc) {
-  return m_d3d8->GetDesc(reinterpret_cast<d3d8::D3DVOLUME_DESC*>(&pDesc));
+  HRESULT hr = m_d3d8->GetDesc(reinterpret_cast<d3d8::D3DVOLUME_DESC*>(&pDesc));
+  if (unlikely(FAILED(hr))) {
+    Logger::warn("D3D9Volume::GetDesc: Failed to get D3D8 volume desc");
+    return hr;
+  }
+
+  return D3D_OK;
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Volume::LockBox(D3DLOCKED_BOX* pLockedBox, CONST D3DBOX* pBox, DWORD Flags) {
@@ -51,4 +57,3 @@ HRESULT STDMETHODCALLTYPE D3D9Volume::GetContainer(REFIID riid, void** ppContain
 
   return m_device->QueryInterface(riid, ppContainer);
 }
-

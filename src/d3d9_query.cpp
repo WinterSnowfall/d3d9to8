@@ -63,6 +63,7 @@ HRESULT STDMETHODCALLTYPE D3D9Query::GetData(void* pData, DWORD dwSize, DWORD dw
         *static_cast<BOOL*>(pData) = true;
         break;
       case D3DQUERYTYPE_VCACHE: {
+        // Pretend to be an Nvidia GPU in all cases
         static constexpr D3DDEVINFO_VCACHE VCACHE_DATA = { MAKEFOURCC('C', 'A', 'C', 'H'), 1, 16, 7 };
         memcpy(pData, &VCACHE_DATA, dwSize);
         break;

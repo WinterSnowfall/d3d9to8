@@ -67,7 +67,7 @@ private:
 
   IDirect3DDevice9*              m_device = nullptr;
 
-  DWORD                          m_handle = 0;
+  DWORD                          m_handle = 0u;
 
   // Stores a pointer to the VS which was used to generate the definition
   IDirect3DVertexShader9*        m_functionOrigin = nullptr;

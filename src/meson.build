@@ -34,4 +34,3 @@ d3d9_dep = declare_dependency(
   link_with           : [ d3d9_dll ],
   include_directories : [ ],
 )
-

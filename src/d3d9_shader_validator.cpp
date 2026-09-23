@@ -31,4 +31,3 @@ HRESULT STDMETHODCALLTYPE D3D9ShaderValidator::End() {
   //Logger::debug("D3D9ShaderValidator::End: Stub!");
   return D3D_OK;
 }
-

@@ -6,6 +6,7 @@ D3D9VertexDecl::D3D9VertexDecl(IDirect3DDevice9* device, DWORD handle, const D3D
   : m_device ( device )
   , m_handle ( handle ) {
   const D3DVERTEXELEMENT9* ptr = vertexElements;
+
   if (likely(ptr != nullptr)) {
     // Copy vertex elements until we hit D3DDECL_END()
     while(ptr->Type != D3DDECLTYPE_UNUSED) {
@@ -45,7 +46,7 @@ HRESULT STDMETHODCALLTYPE D3D9VertexDecl::GetDeclaration(
   if (unlikely(pNumElements == nullptr))
     return D3DERR_INVALIDCALL;
 
-  *pNumElements = UINT(m_vertexElements.size());
+  *pNumElements = static_cast<UINT>(m_vertexElements.size());
 
   if (pElement == nullptr)
     return D3D_OK;

@@ -86,4 +86,3 @@ I sure hope not.
 ### I have a game that doesn't work, should I report an issue?
 
 There's really no point, it is what it is. Games will either work or they won't, for various reasons. It's a roll of the die when it comes to how game code handles missing D3D9 features, or if that happens at all.
-

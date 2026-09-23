@@ -102,4 +102,3 @@ interface DECLSPEC_UUID("4B8AAAFA-140F-42BA-9131-597EAFAA2EAD") d3d8::IDirect3DV
 #define likely(x)   (x)
 #define unlikely(x) (x)
 #endif
-

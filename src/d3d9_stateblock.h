@@ -37,6 +37,6 @@ private:
 
   IDirect3DDevice9* m_device = nullptr;
 
-  DWORD             m_handle = 0;
+  DWORD             m_handle = 0u;
 
 };

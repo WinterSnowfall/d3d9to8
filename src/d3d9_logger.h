@@ -49,4 +49,3 @@ private:
   static std::mutex s_logMutex;
 
 };
-

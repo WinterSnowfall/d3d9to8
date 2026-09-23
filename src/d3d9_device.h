@@ -10,6 +10,7 @@
 #include "d3d9_buffer.h"
 #include "d3d9_surface.h"
 #include "d3d9_shader.h"
+#include "d3d9_swapchain.h"
 #include "d3d9_texture.h"
 #include "d3d9_vertex_declaration.h"
 
@@ -498,8 +499,12 @@ private:
   inline void CacheD3D8ObjectsAndRestoreState() {
     for (UINT i = 0; i < m_presentParams.BackBufferCount; i++) {
       ComObject<d3d8::IDirect3DSurface8> backBuffer8;
-      m_d3d8->GetBackBuffer(i, d3d8::D3DBACKBUFFER_TYPE_MONO, &backBuffer8);
-      m_backBuffers[i] = new D3D9Surface(this, std::move(backBuffer8), nullptr);
+      HRESULT hr = m_d3d8->GetBackBuffer(i, d3d8::D3DBACKBUFFER_TYPE_MONO, &backBuffer8);
+      if (unlikely(FAILED(hr))) {
+        Logger::warn("D3D9Device::CacheD3D8ObjectsAndRestoreState: Failed to get D3D8 back buffer");
+      } else {
+        m_backBuffers[i] = new D3D9Surface(this, std::move(backBuffer8), nullptr);
+      }
     }
 
     ComObject<d3d8::IDirect3DSurface8> autoDepthStencil8;
@@ -525,6 +530,8 @@ private:
   ComObject<d3d8::IDirect3DDevice8>           m_d3d8;
 
   D3DPRESENT_PARAMETERS                       m_presentParams;
+
+  ComObject<D3D9SwapChain, false>             m_implicitSwapchain;
 
   ComObject<D3D9Surface, false>               m_renderTarget;
   ComObject<D3D9Surface, false>               m_depthStencil;

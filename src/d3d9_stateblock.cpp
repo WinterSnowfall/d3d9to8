@@ -6,7 +6,7 @@ D3D9StateBlock::D3D9StateBlock(IDirect3DDevice9* device, DWORD handle)
 }
 
 D3D9StateBlock::~D3D9StateBlock() {
-  if (likely(m_device != nullptr)) {
+  if (likely(m_handle && m_device != nullptr)) {
     D3D9Device* d3d9Device = reinterpret_cast<D3D9Device*>(m_device);
     d3d9Device->GetD3D8Device()->DeleteStateBlock(m_handle);
   }
@@ -33,16 +33,10 @@ HRESULT STDMETHODCALLTYPE D3D9StateBlock::QueryInterface(
 
 HRESULT STDMETHODCALLTYPE D3D9StateBlock::Capture() {
   D3D9Device* d3d9Device = reinterpret_cast<D3D9Device*>(m_device);
-
-  d3d9Device->GetD3D8Device()->CaptureStateBlock(m_handle);
-
-  return D3D_OK;
+  return d3d9Device->GetD3D8Device()->CaptureStateBlock(m_handle);
 }
 
 HRESULT STDMETHODCALLTYPE D3D9StateBlock::Apply() {
   D3D9Device* d3d9Device = reinterpret_cast<D3D9Device*>(m_device);
-
-  d3d9Device->GetD3D8Device()->ApplyStateBlock(m_handle);
-
-  return D3D_OK;
+  return d3d9Device->GetD3D8Device()->ApplyStateBlock(m_handle);
 }

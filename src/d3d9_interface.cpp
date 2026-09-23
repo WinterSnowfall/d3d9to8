@@ -7,12 +7,12 @@ using Logger = ThreadSafeLogger;
 
 D3D9Interface::D3D9Interface(ComObject<d3d8::IDirect3D8>&& d3d8Intf)
   : m_d3d8 ( std::move(d3d8Intf) ) {
-  const UINT adapterCount = m_d3d8->GetAdapterCount();
+  m_adapterCount = m_d3d8->GetAdapterCount();
 
-  m_adapterModeCounts.resize(adapterCount);
-  m_adapterModes.reserve(adapterCount);
+  m_adapterModeCounts.resize(m_adapterCount);
+  m_adapterModes.reserve(m_adapterCount);
 
-  for (UINT adapter = 0; adapter < adapterCount; adapter++) {
+  for (UINT adapter = 0; adapter < m_adapterCount; adapter++) {
     m_adapterModes.emplace_back();
 
     // cache adapter modes and mode counts for each of the two supported
@@ -25,11 +25,11 @@ D3D9Interface::D3D9Interface(ComObject<d3d8::IDirect3D8>&& d3d8Intf)
 
       switch (D3DFORMAT(displayMode.Format)) {
         case D3DFMT_X8R8G8B8:
-          m_adapterModes[adapter][0].emplace_back(displayMode);
+          m_adapterModes[adapter][0].push_back(displayMode);
           m_adapterModeCounts[adapter][0]++;
           break;
         case D3DFMT_R5G6B5:
-          m_adapterModes[adapter][1].emplace_back(displayMode);
+          m_adapterModes[adapter][1].push_back(displayMode);
           m_adapterModeCounts[adapter][1]++;
           break;
         default:
@@ -72,13 +72,21 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::RegisterSoftwareDevice(void* pInitializ
 }
 
 UINT STDMETHODCALLTYPE D3D9Interface::GetAdapterCount() {
-  return m_d3d8->GetAdapterCount();
+  return m_adapterCount;
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Interface::GetAdapterIdentifier(
         UINT                    Adapter,
         DWORD                   Flags,
         D3DADAPTER_IDENTIFIER9* pIdentifier) {
+  // In D3D8 D3DENUM_WHQL_LEVEL is implied, and in
+  // its absence D3DENUM_NO_WHQL_LEVEL must be used
+  if (Flags & D3DENUM_WHQL_LEVEL) {
+    Flags &= ~D3DENUM_WHQL_LEVEL;
+  } else {
+    Flags |= D3DENUM_NO_WHQL_LEVEL;
+  }
+
   d3d8::D3DADAPTER_IDENTIFIER8 identifier8;
   HRESULT hr = m_d3d8->GetAdapterIdentifier(Adapter, Flags, &identifier8);
   if (unlikely(FAILED(hr)))
@@ -86,6 +94,7 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::GetAdapterIdentifier(
 
   strncpy(pIdentifier->Driver, identifier8.Driver, MAX_DEVICE_IDENTIFIER_STRING);
   strncpy(pIdentifier->Description, identifier8.Description, MAX_DEVICE_IDENTIFIER_STRING);
+  strncpy(pIdentifier->DeviceName, R"(\\.\DISPLAY1)", sizeof(char) * 32); // GDI device name, not returned by D3D8
 
   pIdentifier->DriverVersion    = identifier8.DriverVersion;
   pIdentifier->VendorId         = identifier8.VendorId;
@@ -100,6 +109,9 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::GetAdapterIdentifier(
 }
 
 UINT STDMETHODCALLTYPE D3D9Interface::GetAdapterModeCount(UINT Adapter, D3DFORMAT Format) {
+  if (unlikely(Adapter >= m_adapterCount))
+    return D3DERR_INVALIDCALL;
+
   // D3D8 can only use two D3DFMT_X8R8G8B8 (22) and D3DFMT_R5G6B5 (23) as adapter formats
   switch (Format) {
     case D3DFMT_X8R8G8B8:
@@ -110,7 +122,7 @@ UINT STDMETHODCALLTYPE D3D9Interface::GetAdapterModeCount(UINT Adapter, D3DFORMA
       Logger::debug("D3D9Interface::GetAdapterModeCount: Unsupported adapter format: " + std::to_string(Format));
   }
 
-  return 0;
+  return 0u;
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Interface::GetAdapterDisplayMode(UINT Adapter, D3DDISPLAYMODE* pMode) {
@@ -209,6 +221,9 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CheckDeviceFormatConversion(
         D3DDEVTYPE DeviceType,
         D3DFORMAT  SourceFormat,
         D3DFORMAT  TargetFormat) {
+  if (unlikely(Adapter >= m_adapterCount))
+    return D3DERR_INVALIDCALL;
+
   Logger::warn("D3D9Interface::CheckDeviceFormatConversion: Unsupported call!");
   return D3DERR_NOTAVAILABLE;
 }
@@ -268,6 +283,9 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::EnumAdapterModes(
         D3DFORMAT       Format,
         UINT            Mode,
         D3DDISPLAYMODE* pMode) {
+  if (unlikely(Adapter >= m_adapterCount))
+    return D3DERR_INVALIDCALL;
+
   //Logger::debug("D3D9Interface::EnumAdapterModes: Mode:   " + std::to_string(Mode));
   //Logger::debug("D3D9Interface::EnumAdapterModes: Format: " + std::to_string(Format));
 
@@ -291,4 +309,3 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::EnumAdapterModes(
 
   return D3D_OK;
 }
-

@@ -45,9 +45,7 @@ HRESULT STDMETHODCALLTYPE D3D9Surface::GetDesc(D3DSURFACE_DESC *pDesc) {
   if (unlikely(FAILED(hr)))
     return hr;
 
-  D3DSURFACE_DESC surfDesc9 = ConvertSurfaceDesc8(&surfDesc8);
-
-  *pDesc = surfDesc9;
+  ConvertD3D8SurfaceDesc(&surfDesc8, pDesc);
 
   return D3D_OK;
 }
@@ -61,13 +59,18 @@ HRESULT STDMETHODCALLTYPE D3D9Surface::UnlockRect() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Surface::GetDC(HDC *phDC) {
+  if (unlikely(phDC == nullptr))
+    return D3DERR_INVALIDCALL;
+
+  // GetDC calls are only supported on a limited set of surface
+  // formats, so we can pretend we don't support anything at all
   Logger::err("D3D9Surface::GetDC: Unsupported call!");
-  return D3D_OK;
+  return D3DERR_INVALIDCALL;
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Surface::ReleaseDC(HDC hDC) {
-  Logger::err("D3D9Surface::ReleaseDC: Unsupported call!");
-  return D3D_OK;
+  Logger::debug("D3D9Surface::ReleaseDC: Unsupported call!");
+  return D3DERR_INVALIDCALL;
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Surface::GetContainer(REFIID riid, void** ppContainer) {
@@ -76,4 +79,3 @@ HRESULT STDMETHODCALLTYPE D3D9Surface::GetContainer(REFIID riid, void** ppContai
 
   return m_device->QueryInterface(riid, ppContainer);
 }
-

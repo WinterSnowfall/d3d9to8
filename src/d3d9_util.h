@@ -6,7 +6,6 @@
 
 using Logger = ThreadSafeLogger;
 
-// (9<-8) D3DCAPSX: Writes to D3DCAPS9 from D3DCAPS8
 inline void ConvertCaps9(const d3d8::D3DCAPS8& caps8, D3DCAPS9* pCaps9) {
   memset(pCaps9, 0, sizeof(D3DCAPS9));
   memcpy(pCaps9, &caps8, sizeof(d3d8::D3DCAPS8));
@@ -135,7 +134,6 @@ inline void ConvertCaps9(const d3d8::D3DCAPS8& caps8, D3DCAPS9* pCaps9) {
   //
 }
 
-// (8<-9) D3DD3DPRESENT_PARAMETERS: Returns D3D8's params given an input for D3D9
 inline d3d8::D3DPRESENT_PARAMETERS ConvertPresentParameters8(D3DPRESENT_PARAMETERS* pParams) {
   // A 0 back buffer count needs to be corrected and made visible to the D3D9 application as well
   pParams->BackBufferCount = std::max(pParams->BackBufferCount, 1u);
@@ -194,30 +192,23 @@ inline d3d8::D3DPRESENT_PARAMETERS ConvertPresentParameters8(D3DPRESENT_PARAMETE
   return params;
 }
 
-// (9<-8) Convert D3DSURFACE_DESC
-inline D3DSURFACE_DESC ConvertSurfaceDesc8(d3d8::D3DSURFACE_DESC* pSurf8) {
-  D3DSURFACE_DESC surfDesc9;
+inline void ConvertD3D8SurfaceDesc(d3d8::D3DSURFACE_DESC* pSurf8, D3DSURFACE_DESC* pSurf9) {
+  pSurf9->Format = D3DFORMAT(pSurf8->Format);
+  pSurf9->Type   = D3DRESOURCETYPE(pSurf8->Type);
+  pSurf9->Usage  = pSurf8->Usage;
+  pSurf9->Pool   = D3DPOOL(pSurf8->Pool);
 
-  surfDesc9.Format  = D3DFORMAT(pSurf8->Format);
-  surfDesc9.Type    = D3DRESOURCETYPE(pSurf8->Type);
-  surfDesc9.Usage   = pSurf8->Usage;
-  surfDesc9.Pool    = D3DPOOL(pSurf8->Pool);
-
-  surfDesc9.MultiSampleType = D3DMULTISAMPLE_TYPE(pSurf8->MultiSampleType);
-  surfDesc9.MultiSampleQuality = 0;
-  surfDesc9.Width   = pSurf8->Width;
-  surfDesc9.Height  = pSurf8->Height;
-
-  return surfDesc9;
+  pSurf9->MultiSampleType    = D3DMULTISAMPLE_TYPE(pSurf8->MultiSampleType);
+  pSurf9->MultiSampleQuality = 0;
+  pSurf9->Width              = pSurf8->Width;
+  pSurf9->Height             = pSurf8->Height;
 }
 
-// If this D3DSAMPLERSTATETYPE has been remapped to a d3d8::D3DTEXTURESTAGESTATETYPE
-// it will be returned, otherwise returns -1u
 inline d3d8::D3DTEXTURESTAGESTATETYPE GetTextureStateType8(const D3DSAMPLERSTATETYPE SamplerType) {
   switch (SamplerType) {
-    // 13-21:
     case D3DSAMP_ADDRESSU:      return d3d8::D3DTSS_ADDRESSU;
     case D3DSAMP_ADDRESSV:      return d3d8::D3DTSS_ADDRESSV;
+    case D3DSAMP_ADDRESSW:      return d3d8::D3DTSS_ADDRESSW;
     case D3DSAMP_BORDERCOLOR:   return d3d8::D3DTSS_BORDERCOLOR;
     case D3DSAMP_MAGFILTER:     return d3d8::D3DTSS_MAGFILTER;
     case D3DSAMP_MINFILTER:     return d3d8::D3DTSS_MINFILTER;
@@ -225,8 +216,6 @@ inline d3d8::D3DTEXTURESTAGESTATETYPE GetTextureStateType8(const D3DSAMPLERSTATE
     case D3DSAMP_MIPMAPLODBIAS: return d3d8::D3DTSS_MIPMAPLODBIAS;
     case D3DSAMP_MAXMIPLEVEL:   return d3d8::D3DTSS_MAXMIPLEVEL;
     case D3DSAMP_MAXANISOTROPY: return d3d8::D3DTSS_MAXANISOTROPY;
-    // 25:
-    case D3DSAMP_ADDRESSW:      return d3d8::D3DTSS_ADDRESSW;
     default:                    return d3d8::D3DTEXTURESTAGESTATETYPE(-1u);
   }
 }
@@ -266,4 +255,3 @@ inline T bitcast(const J& src) {
   memcpy(&dst, &src, sizeof(T));
   return dst;
 }
-

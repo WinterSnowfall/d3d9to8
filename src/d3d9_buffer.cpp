@@ -97,4 +97,3 @@ HRESULT STDMETHODCALLTYPE D3D9VertexBuffer::Lock(
 HRESULT STDMETHODCALLTYPE D3D9VertexBuffer::Unlock() {
   return m_d3d8->Unlock();
 }
-

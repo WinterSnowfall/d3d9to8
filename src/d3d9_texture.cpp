@@ -43,14 +43,17 @@ HRESULT STDMETHODCALLTYPE D3D9Texture2D::GetLevelDesc(UINT Level, D3DSURFACE_DES
   if (unlikely(pDesc == nullptr))
     return D3DERR_INVALIDCALL;
 
+  if (unlikely(Level >= m_levels.size()))
+    return D3DERR_INVALIDCALL;
+
   d3d8::D3DSURFACE_DESC d3d8SurfDesc;
   HRESULT hr = m_d3d8->GetLevelDesc(Level, &d3d8SurfDesc);
-  if (unlikely(FAILED(hr)))
+  if (unlikely(FAILED(hr))) {
+    Logger::warn("D3D9Texture2D::GetLevelDesc: Failed to get D3D8 level desc");
     return hr;
+  }
 
-  D3DSURFACE_DESC d3d9SurfDesc = ConvertSurfaceDesc8(&d3d8SurfDesc);
-
-  *pDesc = d3d9SurfDesc;
+  ConvertD3D8SurfaceDesc(&d3d8SurfDesc, pDesc);
 
   return D3D_OK;
 }
@@ -67,10 +70,10 @@ HRESULT STDMETHODCALLTYPE D3D9Texture2D::GetSurfaceLevel(UINT Level, IDirect3DSu
   if (unlikely(m_levels[Level] == nullptr)) {
     ComObject<d3d8::IDirect3DSurface8> d3d8SurfaceLevel;
     HRESULT hr = m_d3d8->GetSurfaceLevel(Level, &d3d8SurfaceLevel);
-    // This will fail in a lot of cases, as applications will simply call
-    // it iteratively until a high enough Level value causes an error
-    if (unlikely(FAILED(hr)))
+    if (unlikely(FAILED(hr))) {
+      Logger::warn("D3D9Texture2D::GetLevelDesc: Failed to get D3D8 surface level");
       return hr;
+    }
 
     m_levels[Level] = new D3D9Surface(m_device, std::move(d3d8SurfaceLevel), this);
   }
@@ -133,14 +136,17 @@ HRESULT STDMETHODCALLTYPE D3D9TextureCube::GetLevelDesc(UINT Level, D3DSURFACE_D
   if (unlikely(pDesc == nullptr))
     return D3DERR_INVALIDCALL;
 
+  if (unlikely(Level >= m_levels[0].size()))
+    return D3DERR_INVALIDCALL;
+
   d3d8::D3DSURFACE_DESC d3d8SurfDesc;
   HRESULT hr = m_d3d8->GetLevelDesc(Level, &d3d8SurfDesc);
-  if (unlikely(FAILED(hr)))
+  if (unlikely(FAILED(hr))) {
+    Logger::warn("D3D9Texture2D::GetLevelDesc: Failed to get D3D8 cube level desc");
     return hr;
+  }
 
-  D3DSURFACE_DESC d3d9SurfDesc = ConvertSurfaceDesc8(&d3d8SurfDesc);
-
-  *pDesc = d3d9SurfDesc;
+  ConvertD3D8SurfaceDesc(&d3d8SurfDesc, pDesc);
 
   return D3D_OK;
 }
@@ -163,8 +169,10 @@ HRESULT STDMETHODCALLTYPE D3D9TextureCube::GetCubeMapSurface(
   if (m_levels[Face][Level] == nullptr) {
     ComObject<d3d8::IDirect3DSurface8> d3d8SurfaceLevel;
     HRESULT hr = m_d3d8->GetCubeMapSurface(d3d8::D3DCUBEMAP_FACES(Face), Level, &d3d8SurfaceLevel);
-    if (unlikely(FAILED(hr)))
+    if (unlikely(FAILED(hr))) {
+      Logger::warn("D3D9Texture2D::GetLevelDesc: Failed to get D3D8 cube map surface");
       return hr;
+    }
 
     m_levels[Face][Level] = new D3D9Surface(m_device, std::move(d3d8SurfaceLevel), this);
   }
@@ -229,7 +237,19 @@ D3DRESOURCETYPE STDMETHODCALLTYPE D3D9Texture3D::GetType() {
 
 // The D3D9 and D3D8 D3DVOLUME_DESC structs are identical
 HRESULT STDMETHODCALLTYPE D3D9Texture3D::GetLevelDesc(UINT Level, D3DVOLUME_DESC *pDesc) {
-  return m_d3d8->GetLevelDesc(Level, reinterpret_cast<d3d8::D3DVOLUME_DESC*>(&pDesc));
+  if (unlikely(pDesc == nullptr))
+    return D3DERR_INVALIDCALL;
+
+  if (unlikely(Level >= m_levels.size()))
+    return D3DERR_INVALIDCALL;
+
+  HRESULT hr = m_d3d8->GetLevelDesc(Level, reinterpret_cast<d3d8::D3DVOLUME_DESC*>(&pDesc));
+  if (unlikely(FAILED(hr))) {
+    Logger::warn("D3D9Texture3D::GetVolumeLevel: Failed to get D3D8 volume level desc");
+    return hr;
+  }
+
+  return D3D_OK;
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Texture3D::GetVolumeLevel(UINT Level, IDirect3DVolume9** ppSurfaceLevel) {
@@ -244,8 +264,10 @@ HRESULT STDMETHODCALLTYPE D3D9Texture3D::GetVolumeLevel(UINT Level, IDirect3DVol
   if (unlikely(m_levels[Level] == nullptr)) {
     ComObject<d3d8::IDirect3DVolume8> d3d8VolumeLevel;
     HRESULT hr = m_d3d8->GetVolumeLevel(Level, &d3d8VolumeLevel);
-    if (unlikely(FAILED(hr)))
+    if (unlikely(FAILED(hr))) {
+      Logger::warn("D3D9Texture3D::GetVolumeLevel: Failed to get D3D8 volume level");
       return hr;
+    }
 
     m_levels[Level] = new D3D9Volume(m_device, std::move(d3d8VolumeLevel), this);
   }
@@ -267,4 +289,3 @@ HRESULT STDMETHODCALLTYPE D3D9Texture3D::UnlockBox(UINT Level) {
 HRESULT STDMETHODCALLTYPE D3D9Texture3D::AddDirtyBox(CONST D3DBOX* pDirtyBox) {
   return m_d3d8->AddDirtyBox(reinterpret_cast<CONST d3d8::D3DBOX*>(pDirtyBox));
 }
-

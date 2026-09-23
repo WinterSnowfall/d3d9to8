@@ -6,34 +6,11 @@
 
 using Logger = ThreadSafeLogger;
 
-enum class D3D9ShaderValidatorMessage : uint32_t {
-  BeginOutOfOrder = 0xeb,
-  InstructionOutOfOrder = 0xec,
-  InstructionEndOfShader = 0xed,
-  InstructionNullArgs = 0xee,
-  BadVersionTokenLength = 0xef,
-  BadVersionTokenType = 0xf0,
-  BadEndToken = 0xf1,
-  EndOutOfOrder = 0xf2,
-  MissingEndToken = 0xf3,
-  BadInputRegisterDeclaration = 0x12c,
-  BadInputRegister = 0x167,
-  BadInstructionLength = 0x21e,
-};
-
-enum class D3D9ShaderValidatorState {
-  Begin,
-  ValidatingHeader,
-  ValidatingInstructions,
-  EndOfShader,
-  Error,
-};
-
 using D3D9ShaderValidatorCallback = HRESULT(STDMETHODCALLTYPE *)(
   const char*                      pFile,
         UINT                       Line,
         DWORD                      Unknown,
-        D3D9ShaderValidatorMessage MessageID,
+        UINT                       MessageID,
   const char*                      pMessage,
         void*                      pUserData);
 

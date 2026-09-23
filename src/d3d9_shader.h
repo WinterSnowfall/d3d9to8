@@ -83,7 +83,7 @@ public:
 
   HRESULT STDMETHODCALLTYPE GetFunction(void* pOut, UINT* pSizeOfData);
 
-  DWORD GetD3D8PSHandle() const {
+  DWORD GetPSHandle() const {
     return m_handle;
   }
 

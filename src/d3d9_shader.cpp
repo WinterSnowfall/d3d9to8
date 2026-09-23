@@ -6,6 +6,7 @@ D3D9VertexShader::D3D9VertexShader(IDirect3DDevice9* device, DWORD handle, const
   : m_device ( device )
   , m_handle ( handle ) {
   const DWORD* ptr = pFunction;
+
   if (likely(ptr != nullptr)) {
     while (*ptr != D3DVS_END()) {
       m_function.push_back(*ptr);
@@ -67,7 +68,6 @@ D3D9PixelShader::D3D9PixelShader(IDirect3DDevice9* device, DWORD handle, const D
       m_function.push_back(*ptr);
       ptr++;
     }
-
     m_function.push_back(D3DPS_END());
   }
 }
@@ -109,4 +109,3 @@ HRESULT STDMETHODCALLTYPE D3D9PixelShader::GetFunction(void* pOut, UINT* pSizeOf
 
   return D3D_OK;
 }
-

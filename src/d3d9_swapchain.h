@@ -54,7 +54,9 @@ public:
 
 private:
 
-  IDirect3DDevice9*                    m_device = nullptr;
+  bool                                 m_isImplicit = false;
+
+  IDirect3DDevice9*                    m_device     = nullptr;
 
   ComObject<d3d8::IDirect3DSwapChain8> m_d3d8;
 
