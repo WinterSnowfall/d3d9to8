@@ -10,14 +10,14 @@ public:
   virtual ~ComObjectClamp() { }
 
   ULONG STDMETHODCALLTYPE AddRef() {
-    ULONG refCount = m_refCount++;
+    uint32_t refCount = m_refCount++;
     if (!refCount)
       AddRefPrivate();
     return refCount + 1;
   }
 
   ULONG STDMETHODCALLTYPE Release() {
-    ULONG refCount = this->m_refCount;
+    uint32_t refCount = this->m_refCount;
     if (refCount != 0ul) {
       this->m_refCount--;
       refCount--;
@@ -34,7 +34,7 @@ public:
   }
 
   void ReleasePrivate() {
-    ULONG refPrivate = --m_refPrivate;
+    uint32_t refPrivate = --m_refPrivate;
     if (!refPrivate) {
       m_refPrivate += 0x80000000;
       delete this;
@@ -43,8 +43,8 @@ public:
 
 protected:
 
-  std::atomic<ULONG> m_refCount = { 0ul };
-  std::atomic<ULONG> m_refPrivate = { 0ul };
+  std::atomic<uint32_t> m_refCount = { 0ul };
+  std::atomic<uint32_t> m_refPrivate = { 0ul };
 
 };
 

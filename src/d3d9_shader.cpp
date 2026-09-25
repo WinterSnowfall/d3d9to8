@@ -3,7 +3,7 @@
 #include "d3d9_device.h"
 
 D3D9VertexShader::D3D9VertexShader(IDirect3DDevice9* device, DWORD handle, const DWORD* pFunction)
-  : m_device ( device )
+  : D3D9DeviceChild(device)
   , m_handle ( handle ) {
   const DWORD* ptr = pFunction;
 
@@ -59,7 +59,7 @@ void D3D9VertexShader::ClearVSHandle() {
 }
 
 D3D9PixelShader::D3D9PixelShader(IDirect3DDevice9* device, DWORD handle, const DWORD* pFunction)
-  : m_device ( device )
+  : D3D9DeviceChild(device)
   , m_handle ( handle ) {
   const DWORD* ptr = pFunction;
 

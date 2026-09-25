@@ -14,6 +14,22 @@ D3D9Volume::D3D9Volume(
 
 D3D9Volume::~D3D9Volume() { }
 
+ULONG STDMETHODCALLTYPE D3D9Volume::AddRef() {
+  // Subresources ref the parent container
+  if (m_container != nullptr)
+    return m_container->AddRef();
+
+  return D3D9Resource::AddRef();
+}
+
+ULONG STDMETHODCALLTYPE D3D9Volume::Release() {
+  // Subresources release the parent container
+  if (m_container != nullptr)
+    return m_container->Release();
+
+  return D3D9Resource::Release();
+}
+
 HRESULT STDMETHODCALLTYPE D3D9Volume::QueryInterface(REFIID riid, void** ppvObject) {
   if (unlikely(ppvObject == nullptr))
     return E_POINTER;

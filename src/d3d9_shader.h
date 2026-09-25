@@ -1,7 +1,7 @@
 #pragma once
 
 #include "d3d9_include.h"
-#include "d3d9_com_object.h"
+#include "d3d9_device_child.h"
 #include "d3d9_logger.h"
 
 #include "d3d9_shader_util.h"
@@ -10,7 +10,7 @@
 
 using Logger = ThreadSafeLogger;
 
-class D3D9VertexShader final : public ComObjectClamp<IDirect3DVertexShader9> {
+class D3D9VertexShader final : public D3D9DeviceChild<IDirect3DVertexShader9> {
 
 public:
 
@@ -21,15 +21,6 @@ public:
   HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
 
   HRESULT STDMETHODCALLTYPE GetFunction(void* pOut, UINT* pSizeOfData);
-
-  HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) {
-    if (ppDevice == nullptr)
-      return D3DERR_INVALIDCALL;
-
-    *ppDevice = ref(m_device);
-
-    return D3D_OK;
-  }
 
   void SetVSHandle(DWORD handle) {
     // Release any previously held shader handle
@@ -49,20 +40,29 @@ public:
     return &m_function8;
   }
 
+  void SetDeclarationOrigin(IDirect3DVertexDeclaration9* vertexDeclaration) {
+    m_declarationOrigin = vertexDeclaration;
+  }
+
+  bool NeedsFunctionUpdate(IDirect3DVertexDeclaration9* vertexDeclaration) const {
+    return m_function8.empty() || m_declarationOrigin != vertexDeclaration;
+  }
+
 private:
 
   void ClearVSHandle();
 
-  IDirect3DDevice9*  m_device = nullptr;
+  DWORD                        m_handle = 0u;
 
-  DWORD              m_handle = 0u;
+  // Stores a pointer to the declaration which was used to generate the function
+  IDirect3DVertexDeclaration9* m_declarationOrigin = nullptr;
 
-  std::vector<DWORD> m_function;
-  std::vector<DWORD> m_function8;
+  std::vector<DWORD>           m_function;
+  std::vector<DWORD>           m_function8;
 
 };
 
-class D3D9PixelShader final : public ComObjectClamp<IDirect3DPixelShader9> {
+class D3D9PixelShader final : public D3D9DeviceChild<IDirect3DPixelShader9> {
 
 public:
 
@@ -72,15 +72,6 @@ public:
 
   HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
 
-  HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) {
-    if (unlikely(ppDevice == nullptr))
-      return D3DERR_INVALIDCALL;
-
-    *ppDevice = ref(m_device);
-
-    return D3D_OK;
-  }
-
   HRESULT STDMETHODCALLTYPE GetFunction(void* pOut, UINT* pSizeOfData);
 
   DWORD GetPSHandle() const {
@@ -89,10 +80,8 @@ public:
 
 private:
 
-  IDirect3DDevice9*  m_device = nullptr;
+  DWORD                       m_handle = 0u;
 
-  DWORD              m_handle = 0u;
-
-  std::vector<DWORD> m_function;
+  std::vector<DWORD>          m_function;
 
 };

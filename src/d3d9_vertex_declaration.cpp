@@ -3,7 +3,7 @@
 #include "d3d9_device.h"
 
 D3D9VertexDecl::D3D9VertexDecl(IDirect3DDevice9* device, DWORD handle, const D3DVERTEXELEMENT9* vertexElements)
-  : m_device ( device )
+  : D3D9DeviceChild(device)
   , m_handle ( handle ) {
   const D3DVERTEXELEMENT9* ptr = vertexElements;
 

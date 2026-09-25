@@ -7,15 +7,12 @@
 using Logger = ThreadSafeLogger;
 
 inline void ConvertCaps9(const d3d8::D3DCAPS8& caps8, D3DCAPS9* pCaps9) {
-  memset(pCaps9, 0, sizeof(D3DCAPS9));
   memcpy(pCaps9, &caps8, sizeof(d3d8::D3DCAPS8));
 
   if (likely(!D3D9TO8_LENIENT_SHADERS)) {
-    // ensure we report only D3D8-level VS/PS caps at best
-    if (pCaps9->VertexShaderVersion > D3DVS_VERSION(1, 1))
-      pCaps9->VertexShaderVersion = D3DVS_VERSION(1, 1);
-    if (pCaps9->PixelShaderVersion > D3DPS_VERSION(1, 4))
-      pCaps9->PixelShaderVersion  = D3DPS_VERSION(1, 4);
+    // ensure we report only D3D8-level VS/PS caps
+    pCaps9->VertexShaderVersion = D3DVS_VERSION(1, 1);
+    pCaps9->PixelShaderVersion  = D3DPS_VERSION(1, 4);
   } else {
     // fake report full SM3 support (NOT recommended)
     pCaps9->VertexShaderVersion = D3DVS_VERSION(3, 0);
@@ -51,58 +48,58 @@ inline void ConvertCaps9(const d3d8::D3DCAPS8& caps8, D3DCAPS9* pCaps9) {
   }
 
   //
-  // add a few D3D9 caps which are missing in D3D8
-  //
-  //pCaps9->Caps2               |= D3DCAPS2_CANAUTOGENMIPMAP; // Doesn't exist in D3D8
-
-  pCaps9->Caps3                 |= D3DCAPS3_LINEAR_TO_SRGB_PRESENTATION
-                                 | D3DCAPS3_COPY_TO_VIDMEM
-                                 | D3DCAPS3_COPY_TO_SYSTEMMEM;
-
-  //pCaps9->PrimitiveMiscCaps //|= D3DPMISCCAPS_FOGANDSPECULARALPHA
-                              // | D3DPMISCCAPS_PERSTAGECONSTANT // Doesn't actually exist in D3D8
-                              // | D3DPMISCCAPS_INDEPENDENTWRITEMASKS // // The render states don't exist in D3D8
-                              // | D3DPMISCCAPS_SEPARATEALPHABLEND // The render state doesn't exist in D3D8
-                              // | D3DPMISCCAPS_MRTINDEPENDENTBITDEPTHS // MRT = multiple render targets
-                              // | D3DPMISCCAPS_MRTPOSTPIXELSHADERBLENDING // MRT = multiple render targets
-                              // | D3DPMISCCAPS_FOGVERTEXCLAMPED
-                              // | D3DPMISCCAPS_POSTBLENDSRGBCONVERT; // "This flag is available in Direct3D 9Ex only."
-
-  pCaps9->RasterCaps            |= D3DPRASTERCAPS_DEPTHBIAS
-                              // | D3DPRASTERCAPS_SLOPESCALEDEPTHBIAS // The render state doesn't exist in D3D8
-                              // | D3DPRASTERCAPS_SCISSORTEST // There's no D3D8 equivalent
-                                 | D3DPRASTERCAPS_MULTISAMPLE_TOGGLE;
-
-  //pCaps9->SrcBlendCaps          |= D3DPBLENDCAPS_BLENDFACTOR; // D3D9 exclusive
-
-  //pCaps9->DestBlendCaps         |= D3DPBLENDCAPS_BLENDFACTOR; // D3D9 exclusive
-
-  pCaps9->LineCaps              |= D3DLINECAPS_ANTIALIAS;
-
-  //pCaps9->StencilCaps           |= D3DSTENCILCAPS_TWOSIDED; // The render states don't exist in D3D8
-
-  //pCaps9->VertexProcessingCaps  |= D3DVTXPCAPS_TEXGEN_SPHEREMAP; // D3DTSS_TCI_SPHEREMAP doesn't exist in D3D8
-  //
-  //
-  //
-
-  //
   // remove D3D8 caps which are no longer present in D3D9
   //
-  pCaps9->Caps2                 &= ~D3DCAPS2_CANRENDERWINDOWED;
+  pCaps9->Caps2      &= ~D3DCAPS2_CANRENDERWINDOWED;
 
-  pCaps9->RasterCaps            &= ~D3DPRASTERCAPS_ZBIAS;
+  pCaps9->RasterCaps &= ~D3DPRASTERCAPS_ZBIAS;
   //
   //
   //
 
   //
-  // add all the remaining D3D9 caps, which are not present at all in D3D8
+  // add a few D3D9 caps which are missing in D3D8
+  //
+  //pCaps9->Caps2                |= D3DCAPS2_CANAUTOGENMIPMAP; // Doesn't exist in D3D8
+
+  pCaps9->Caps3                  |= D3DCAPS3_LINEAR_TO_SRGB_PRESENTATION
+                                  | D3DCAPS3_COPY_TO_VIDMEM
+                                  | D3DCAPS3_COPY_TO_SYSTEMMEM;
+
+  //pCaps9->PrimitiveMiscCaps  //|= D3DPMISCCAPS_FOGANDSPECULARALPHA
+                               // | D3DPMISCCAPS_PERSTAGECONSTANT // Doesn't actually exist in D3D8
+                               // | D3DPMISCCAPS_INDEPENDENTWRITEMASKS // // The render states don't exist in D3D8
+                               // | D3DPMISCCAPS_SEPARATEALPHABLEND // The render state doesn't exist in D3D8
+                               // | D3DPMISCCAPS_MRTINDEPENDENTBITDEPTHS // MRT = multiple render targets
+                               // | D3DPMISCCAPS_MRTPOSTPIXELSHADERBLENDING // MRT = multiple render targets
+                               // | D3DPMISCCAPS_FOGVERTEXCLAMPED
+                               // | D3DPMISCCAPS_POSTBLENDSRGBCONVERT; // "This flag is available in Direct3D 9Ex only."
+
+  pCaps9->RasterCaps             |= D3DPRASTERCAPS_DEPTHBIAS
+                               // | D3DPRASTERCAPS_SLOPESCALEDEPTHBIAS // The render state doesn't exist in D3D8
+                               // | D3DPRASTERCAPS_SCISSORTEST // There's no D3D8 equivalent
+                                  | D3DPRASTERCAPS_MULTISAMPLE_TOGGLE;
+
+  //pCaps9->SrcBlendCaps         |= D3DPBLENDCAPS_BLENDFACTOR; // D3D9 exclusive
+
+  //pCaps9->DestBlendCaps        |= D3DPBLENDCAPS_BLENDFACTOR; // D3D9 exclusive
+
+  pCaps9->LineCaps               |= D3DLINECAPS_ANTIALIAS;
+
+  //pCaps9->StencilCaps          |= D3DSTENCILCAPS_TWOSIDED; // The render states don't exist in D3D8
+
+  //pCaps9->VertexProcessingCaps |= D3DVTXPCAPS_TEXGEN_SPHEREMAP; // D3DTSS_TCI_SPHEREMAP doesn't exist in D3D8
+  //
+  //
+  //
+
+  //
+  // set all the remaining D3D9 caps, which are not present at all in D3D8
   //
   // none of the D3D9 DevCaps2 are supported/possible in D3D8
-  pCaps9->DevCaps2                 = 0; //   D3DDEVCAPS2_STREAMOFFSET
-                                        // | D3DDEVCAPS2_CAN_STRETCHRECT_FROM_TEXTURES
-                                        // | D3DDEVCAPS2_VERTEXELEMENTSCANSHARESTREAMOFFSET;
+  pCaps9->DevCaps2                   = 0; //   D3DDEVCAPS2_STREAMOFFSET
+                                          // | D3DDEVCAPS2_CAN_STRETCHRECT_FROM_TEXTURES
+                                          // | D3DDEVCAPS2_VERTEXELEMENTSCANSHARESTREAMOFFSET;
 
   pCaps9->MaxNpatchTessellationLevel = 0.0f;
   pCaps9->Reserved5                  = 0;
@@ -110,8 +107,11 @@ inline void ConvertCaps9(const d3d8::D3DCAPS8& caps8, D3DCAPS9* pCaps9) {
   pCaps9->AdapterOrdinalInGroup      = 0;
   pCaps9->NumberOfAdaptersInGroup    = 1;
 
-  pCaps9->DeclTypes                  = D3DDTCAPS_UBYTE4
-                                     | D3DDTCAPS_UBYTE4N
+  pCaps9->DeclTypes                  = D3DDTCAPS_UBYTE4; // Only UBYTE4 is supported in SM1
+
+  if (unlikely(D3D9TO8_LENIENT_SHADERS)) {
+    // fake report full SM3 support (NOT recommended)
+    pCaps9->DeclTypes               |= D3DDTCAPS_UBYTE4N
                                      | D3DDTCAPS_SHORT2N
                                      | D3DDTCAPS_SHORT4N
                                      | D3DDTCAPS_USHORT2N
@@ -120,6 +120,7 @@ inline void ConvertCaps9(const d3d8::D3DCAPS8& caps8, D3DCAPS9* pCaps9) {
                                      | D3DDTCAPS_DEC3N
                                      | D3DDTCAPS_FLOAT16_2
                                      | D3DDTCAPS_FLOAT16_4;
+  }
 
   // D3D8 doesn't support multiple simultaneous render targets
   pCaps9->NumSimultaneousRTs         = 1;

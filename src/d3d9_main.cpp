@@ -68,12 +68,12 @@ extern "C" {
 
   DLLEXPORT int __stdcall D3DPERF_BeginEvent(D3DCOLOR col, LPCWSTR wszName) {
     Logger::debug("D3DPERF_BeginEvent:: Stub!");
-    return 0;
+    return -1;
   }
 
   DLLEXPORT int __stdcall D3DPERF_EndEvent(void) {
     Logger::debug("D3DPERF_EndEvent:: Stub!");
-    return 0;
+    return -1;
   }
 
   DLLEXPORT void __stdcall D3DPERF_SetMarker(D3DCOLOR col, LPCWSTR wszName) {

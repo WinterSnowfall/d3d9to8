@@ -34,7 +34,8 @@ private:
     LOG_DEBUG = 0,
     LOG_INFO  = 1,
     LOG_WARN  = 2,
-    LOG_ERROR = 3
+    LOG_ERROR = 3,
+    LOG_NONE  = 4
   };
 
   inline static std::string getTimestamp();

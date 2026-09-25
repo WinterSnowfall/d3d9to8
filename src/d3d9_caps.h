@@ -2,8 +2,10 @@
 
 constexpr uint32_t D3D9TO8_MAX_TEXTURE_STAGES = 8;
 constexpr uint32_t D3D9TO8_MAX_STREAMS        = 16;
-constexpr uint32_t D3D9TO8_MAX_VS_REG_INDEX   = 16;
-constexpr uint32_t D3D9TO8_MAX_VS_DECL_TYPE   = 7;
+constexpr uint32_t D3D9TO8_MAX_VS_IREG_INDEX  = 16;
+constexpr uint32_t D3D9TO8_MAX_VS_CREG_INDEX  = 96;
+constexpr uint32_t D3D9TO8_MAX_VS_DECL_TYPE   = 8;
+constexpr BYTE     D3D9TO8_MAX_VS_FREG_INDEX  = 0xFF; // 255
 
 // ZBIAS can be an integer from 0 to 16 and needs to be remapped to float
 constexpr float    D3D9TO8_ZBIAS_SCALE        = -1.0f / ((1u << 16) - 1); // Consider D16 precision

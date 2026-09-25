@@ -1,8 +1,8 @@
 #include "d3d9_stateblock.h"
 
 D3D9StateBlock::D3D9StateBlock(IDirect3DDevice9* device, DWORD handle)
-: m_device ( device )
-, m_handle ( handle ) {
+  : D3D9DeviceChild(device)
+  , m_handle ( handle ) {
 }
 
 D3D9StateBlock::~D3D9StateBlock() {

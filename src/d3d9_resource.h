@@ -1,31 +1,24 @@
 #pragma once
 
 #include "d3d9_include.h"
-#include "d3d9_com_object.h"
+#include "d3d9_device_child.h"
 #include "d3d9_logger.h"
 
 using Logger = ThreadSafeLogger;
 
 template <typename ObjectType>
-class D3D9Resource : public ComObjectClamp<ObjectType> {
+class D3D9Resource : public D3D9DeviceChild<ObjectType> {
 
 public:
 
-  D3D9Resource(IDirect3DDevice9* pDevice, d3d8::IDirect3DResource8* resource8)
-    : m_device ( pDevice )
+  D3D9Resource(
+      IDirect3DDevice9* device,
+      d3d8::IDirect3DResource8* resource8)
+    : D3D9DeviceChild<ObjectType>(device)
     , m_d3d8 ( resource8 ) {
   }
 
   ~D3D9Resource() {
-  }
-
-  HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) {
-    if (unlikely(ppDevice == nullptr))
-      return D3DERR_INVALIDCALL;
-
-    *ppDevice = ref(m_device);
-
-    return D3D_OK;
   }
 
   HRESULT STDMETHODCALLTYPE SetPrivateData(
@@ -58,10 +51,6 @@ public:
   void STDMETHODCALLTYPE PreLoad() {
     m_d3d8->PreLoad();
   }
-
-protected:
-
-  IDirect3DDevice9* m_device = nullptr;
 
 private:
 

@@ -1,7 +1,5 @@
 #include "d3d9_texture.h"
 
-#include "d3d9_surface.h"
-#include "d3d9_volume.h"
 #include "d3d9_util.h"
 
 D3D9Texture2D::D3D9Texture2D(

@@ -77,7 +77,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetDirect3D(IDirect3D9** ppD3D9) {
   if (unlikely(ppD3D9 == nullptr))
     return D3DERR_INVALIDCALL;
 
-  *ppD3D9 = ref(m_intf);
+  *ppD3D9 = m_intf.ref();
 
   return D3D_OK;
 }
@@ -681,6 +681,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::ColorFill(
         IDirect3DSurface9* pSurface,
   const RECT*              pRect,
         D3DCOLOR           Color) {
+  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  if (m_isMultitheaded)
+    deviceLock.lock();
+
   if (unlikely(pSurface == nullptr))
     return D3DERR_INVALIDCALL;
 
@@ -692,21 +696,28 @@ HRESULT STDMETHODCALLTYPE D3D9Device::ColorFill(
     d3d8::D3DVIEWPORT8 currentViewport;
     m_d3d8->GetViewport(&currentViewport);
 
-    D3DSURFACE_DESC destSurfaceDesc = { };
-    if (pRect == nullptr)
-      pSurface->GetDesc(&destSurfaceDesc);
+    D3DSURFACE_DESC destSurfaceDesc;
+    pSurface->GetDesc(&destSurfaceDesc);
 
+    // We need to make sure the viewport is set to
+    // the full surface dimensions before we clear it
     d3d8::D3DVIEWPORT8 clearViewport;
-    clearViewport.X = pRect == nullptr ? 0u : pRect->left;
-    clearViewport.Y = pRect == nullptr ? 0u : pRect->top;
-    clearViewport.Width  = pRect == nullptr ? destSurfaceDesc.Width : pRect->right - pRect->left;
-    clearViewport.Height = pRect == nullptr ? destSurfaceDesc.Height : pRect->bottom - pRect->top;
+    clearViewport.X = 0u;
+    clearViewport.Y = 0u;
+    clearViewport.Width  = destSurfaceDesc.Width;
+    clearViewport.Height = destSurfaceDesc.Height;
     clearViewport.MinZ = 0.0f;
     clearViewport.MaxZ = 1.0f;
 
     const DWORD clearFlags = m_renderTarget == destSurface9 ? D3DCLEAR_TARGET : D3DCLEAR_ZBUFFER;
 
+    if (clearFlags & D3DCLEAR_TARGET)
+      Logger::debug("D3D9Device::ColorFill: Clearing the current render target");
+    else if (clearFlags & D3DCLEAR_ZBUFFER)
+      Logger::debug("D3D9Device::ColorFill: Clearing the current depth stencil");
+
     m_d3d8->SetViewport(&clearViewport);
+
     HRESULT hr = m_d3d8->Clear(pRect == nullptr ? 0 : 1, reinterpret_cast<const d3d8::D3DRECT*>(pRect),
                                clearFlags, Color, 1.0f, 0);
     if (unlikely(FAILED(hr)))
@@ -1417,6 +1428,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexDeclaration(IDirect3DVertexDeclar
         ConvertD3D9Shader(vertexDecl->GetDeclaration8(), vertexDecl->GetDeclaration9(),
                           m_vertexShader->GetFunction8(), m_vertexShader->GetFunction9());
         vertexDecl->SetFunctionOrigin(m_vertexShader.ptr());
+        m_vertexShader->SetDeclarationOrigin(vertexDecl);
         m_vertexShader->SetVSHandle(0u);
       }
 
@@ -1441,7 +1453,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexDeclaration(IDirect3DVertexDeclar
       }
     }
   } else {
-    m_d3d8->SetVertexShader(0u);
+    // Restore either the current FVF (even if 0)
+    m_d3d8->SetVertexShader(m_fvf);
   }
 
   m_vertexDecl = vertexDecl;
@@ -1465,24 +1478,23 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetVertexDeclaration(IDirect3DVertexDeclar
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::SetFVF(DWORD FVF) {
-  return m_d3d8->SetVertexShader(FVF);
-}
-
-HRESULT STDMETHODCALLTYPE D3D9Device::GetFVF(DWORD* pFVF) {
-  DWORD fvf = 0;
-  HRESULT hr = m_d3d8->GetVertexShader(&fvf);
+  HRESULT hr = m_d3d8->SetVertexShader(FVF);
   if (unlikely(FAILED(hr))) {
-    Logger::warn("D3D9Device::GetFVF: Failed to get D3D8 fvf");
+    Logger::warn("D3D9Device::SetFVF: Failed to set D3D8 FVF");
     return hr;
   }
 
-  if ((fvf & D3DFVF_RESERVED0) == 0) {
-    *pFVF = fvf;
-  // TODO: Decode the FVF if a fixed function vertex declaration is set
-  } else {
-    // Return 0 if the current handle belongs to a programmable shader
-    *pFVF = 0u;
-  }
+  m_fvf = FVF;
+
+  return D3D_OK;
+}
+
+HRESULT STDMETHODCALLTYPE D3D9Device::GetFVF(DWORD* pFVF) {
+  if (unlikely(pFVF == nullptr))
+    return D3DERR_INVALIDCALL;
+
+  // The D3D8 side FVF may be overwritten by declaration/shader handles
+  *pFVF = m_fvf;
 
   return D3D_OK;
 }
@@ -1522,10 +1534,11 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexShader(IDirect3DVertexShader9* pS
     // Defer any operation until we have a valid m_vertexDecl set,
     // otherwise a non-FF vertex shader creation will fail in D3D8
     if (likely(m_vertexDecl != nullptr)) {
-      if (m_vertexDecl->NeedsDefinitionUpdate(vertexShader9)) {
+      if (vertexShader9->NeedsFunctionUpdate(m_vertexDecl.ptr())) {
         ConvertD3D9Shader(m_vertexDecl->GetDeclaration8(), m_vertexDecl->GetDeclaration9(),
                           vertexShader9->GetFunction8(), vertexShader9->GetFunction9());
         m_vertexDecl->SetFunctionOrigin(vertexShader9);
+        vertexShader9->SetDeclarationOrigin(m_vertexDecl.ptr());
         vertexShader9->SetVSHandle(0u);
       }
 
@@ -1550,9 +1563,38 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexShader(IDirect3DVertexShader9* pS
       }
     }
   } else {
-    // TODO: Also handle situations where a FVF definition exists and
-    // we may want to revert to it in the absence of a programmable shader
-    m_d3d8->SetVertexShader(0u);
+    // Revert to the fixed function declaration otherwise
+    if (likely(m_fvf == 0u && m_vertexDecl != nullptr)) {
+      if (m_vertexDecl->NeedsDefinitionUpdate(nullptr)) {
+        ConvertD3D9Shader(m_vertexDecl->GetDeclaration8(), m_vertexDecl->GetDeclaration9(),
+                          nullptr, nullptr);
+        m_vertexDecl->SetFunctionOrigin(nullptr);
+        m_vertexDecl->SetVSHandle(0u);
+      }
+
+      DWORD handle = m_vertexDecl->GetVSHandle();
+      if (!handle) {
+        HRESULT hr = m_d3d8->CreateVertexShader(m_vertexDecl->GetDeclaration8()->data(),
+                                                nullptr,
+                                                &handle, 0);
+        if (unlikely(FAILED(hr))) {
+          Logger::warn("D3D9Device::SetVertexShader: Failed to create D3D8 vertex shader");
+          if (likely(!D3D9TO8_LENIENT_SHADERS))
+            return hr;
+        }
+        m_vertexDecl->SetVSHandle(handle);
+      }
+
+      HRESULT hr = m_d3d8->SetVertexShader(handle);
+      if (unlikely(FAILED(hr))) {
+        Logger::warn("D3D9Device::SetVertexShader: Failed to set D3D8 vertex shader");
+        if (likely(!D3D9TO8_LENIENT_SHADERS))
+          return hr;
+      }
+    } else {
+      // Restore either the current FVF (even if 0)
+      m_d3d8->SetVertexShader(m_fvf);
+    }
   }
 
   m_vertexShader = vertexShader9;

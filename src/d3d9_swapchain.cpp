@@ -6,9 +6,9 @@ D3D9SwapChain::D3D9SwapChain(
     IDirect3DDevice9* device,
     ComObject<d3d8::IDirect3DSwapChain8>&& swapChain8,
     D3DPRESENT_PARAMETERS* pPresentationParameters)
-  : m_device ( device )
+  : D3D9DeviceChild(device)
   , m_d3d8 ( std::move(swapChain8) ) {
-  if (likely(m_d3d8 == nullptr && m_device != nullptr)) {
+  if (likely(m_d3d8 == nullptr)) {
     m_isImplicit = true;
   }
   if (unlikely(pPresentationParameters != nullptr)) {

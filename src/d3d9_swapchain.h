@@ -1,12 +1,12 @@
 #pragma once
 
 #include "d3d9_include.h"
-#include "d3d9_com_object.h"
+#include "d3d9_device_child.h"
 #include "d3d9_logger.h"
 
 using Logger = ThreadSafeLogger;
 
-class D3D9SwapChain final : public ComObjectClamp<IDirect3DSwapChain9> {
+class D3D9SwapChain final : public D3D9DeviceChild<IDirect3DSwapChain9> {
 
 public:
 
@@ -43,20 +43,9 @@ public:
 
   HRESULT STDMETHODCALLTYPE GetPresentStats(D3DPRESENTSTATS* pPresentationStatistics);
 
-  HRESULT STDMETHODCALLTYPE GetDevice(IDirect3DDevice9** ppDevice) {
-    if (unlikely(ppDevice == nullptr))
-      return D3DERR_INVALIDCALL;
-
-    *ppDevice = ref(m_device);
-
-    return D3D_OK;
-  }
-
 private:
 
   bool                                 m_isImplicit = false;
-
-  IDirect3DDevice9*                    m_device     = nullptr;
 
   ComObject<d3d8::IDirect3DSwapChain8> m_d3d8;
 

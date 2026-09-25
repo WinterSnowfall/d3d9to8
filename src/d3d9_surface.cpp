@@ -14,6 +14,22 @@ D3D9Surface::D3D9Surface(
 D3D9Surface::~D3D9Surface() {
 }
 
+ULONG STDMETHODCALLTYPE D3D9Surface::AddRef() {
+  // Subresources ref the parent container
+  if (m_container != nullptr)
+    return m_container->AddRef();
+
+  return D3D9Resource::AddRef();
+}
+
+ULONG STDMETHODCALLTYPE D3D9Surface::Release() {
+  // Subresources release the parent container
+  if (m_container != nullptr)
+    return m_container->Release();
+
+  return D3D9Resource::Release();
+}
+
 HRESULT STDMETHODCALLTYPE D3D9Surface::QueryInterface(REFIID riid, void** ppvObject) {
   if (unlikely(ppvObject == nullptr))
     return E_POINTER;

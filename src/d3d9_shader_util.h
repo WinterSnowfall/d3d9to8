@@ -9,9 +9,34 @@
 
 using Logger = ThreadSafeLogger;
 
-// In invalid/unsupported cases return register 255, which will cause the vertex shader to fail
-// compilation (the maximum supported register number in D3D8 is 16, for a total of 17 registers)
 inline BYTE ConvertD3D9UsageToD3D8Register(D3DDECLUSAGE Usage, BYTE UsageIndex) {
+  /*D3DVSDT_FLOAT1   = 0x00, // Size:  4
+    D3DVSDT_FLOAT2   = 0x01, // Size:  8
+    D3DVSDT_FLOAT3   = 0x02, // Size: 12
+    D3DVSDT_FLOAT4   = 0x03, // Size: 16
+    D3DVSDT_D3DCOLOR = 0x04, // Size:  4
+    D3DVSDT_UBYTE4   = 0x05, // Size:  4
+    D3DVSDT_SHORT2   = 0x06, // Size:  4
+    D3DVSDT_SHORT4   = 0x07  // Size:  8*/
+
+  /*D3DVSDE_POSITION     =  0,
+    D3DVSDE_BLENDWEIGHT  =  1,
+    D3DVSDE_BLENDINDICES =  2,
+    D3DVSDE_NORMAL       =  3,
+    D3DVSDE_PSIZE        =  4,
+    D3DVSDE_DIFFUSE      =  5,
+    D3DVSDE_SPECULAR     =  6,
+    D3DVSDE_TEXCOORD0    =  7,
+    D3DVSDE_TEXCOORD1    =  8,
+    D3DVSDE_TEXCOORD2    =  9,
+    D3DVSDE_TEXCOORD3    = 10,
+    D3DVSDE_TEXCOORD4    = 11,
+    D3DVSDE_TEXCOORD5    = 12,
+    D3DVSDE_TEXCOORD6    = 13,
+    D3DVSDE_TEXCOORD7    = 14,
+    D3DVSDE_POSITION2    = 15,
+    D3DVSDE_NORMAL2      = 16*/
+
   switch (Usage) {
     case D3DDECLUSAGE_POSITION:
       switch (UsageIndex) {
@@ -21,7 +46,7 @@ inline BYTE ConvertD3D9UsageToD3D8Register(D3DDECLUSAGE Usage, BYTE UsageIndex) 
           return d3d8::D3DVSDE_POSITION2;
         default:
           Logger::warn("ConvertD3D9UsageToD3D8Register:: Unsupported D3DDECLUSAGE_POSITION index: " + std::to_string(UsageIndex));
-          return 255;
+          return D3D9TO8_MAX_VS_FREG_INDEX;
       }
 
     case D3DDECLUSAGE_NORMAL:
@@ -32,7 +57,7 @@ inline BYTE ConvertD3D9UsageToD3D8Register(D3DDECLUSAGE Usage, BYTE UsageIndex) 
           return d3d8::D3DVSDE_NORMAL2;
         default:
           Logger::warn("ConvertD3D9UsageToD3D8Register:: Unsupported D3DDECLUSAGE_NORMAL index: " + std::to_string(UsageIndex));
-          return 255;
+          return D3D9TO8_MAX_VS_FREG_INDEX;
       }
 
     case D3DDECLUSAGE_BLENDWEIGHT:
@@ -52,48 +77,48 @@ inline BYTE ConvertD3D9UsageToD3D8Register(D3DDECLUSAGE Usage, BYTE UsageIndex) 
           return d3d8::D3DVSDE_SPECULAR;
         default:
           Logger::warn("ConvertD3D9UsageToD3D8Register:: Unsupported D3DDECLUSAGE_COLOR index: " + std::to_string(UsageIndex));
-          return 255;
+          return D3D9TO8_MAX_VS_FREG_INDEX;
       }
 
     case D3DDECLUSAGE_TEXCOORD:
       if (unlikely(UsageIndex >= D3DDP_MAXTEXCOORD)) {
         Logger::warn("ConvertD3D9UsageToD3D8Register:: Unsupported D3DDECLUSAGE_TEXCOORD index: " + std::to_string(UsageIndex));
-        return 255;
+        return D3D9TO8_MAX_VS_FREG_INDEX;
       }
       return d3d8::D3DVSDE_TEXCOORD0 + UsageIndex;
 
     // None of the below are supported in D3D8, but should be rare/unused with FF/SM1 shaders
     case D3DDECLUSAGE_TANGENT:
       Logger::warn("ConvertD3D9UsageToD3D8Register:: Unsupported use of D3DDECLUSAGE_TANGENT");
-      return 255;
+      return D3D9TO8_MAX_VS_FREG_INDEX;
 
     case D3DDECLUSAGE_BINORMAL:
       Logger::warn("ConvertD3D9UsageToD3D8Register:: Unsupported use of D3DDECLUSAGE_BINORMAL");
-      return 255;
+      return D3D9TO8_MAX_VS_FREG_INDEX;
 
     case D3DDECLUSAGE_TESSFACTOR:
       Logger::warn("ConvertD3D9UsageToD3D8Register:: Unsupported use of D3DDECLUSAGE_TESSFACTOR");
-      return 255;
+      return D3D9TO8_MAX_VS_FREG_INDEX;
 
     case D3DDECLUSAGE_POSITIONT:
       Logger::warn("ConvertD3D9UsageToD3D8Register:: Unsupported use of D3DDECLUSAGE_POSITIONT");
-      return 255;
+      return D3D9TO8_MAX_VS_FREG_INDEX;
 
     case D3DDECLUSAGE_FOG:
       Logger::warn("ConvertD3D9UsageToD3D8Register:: Unsupported use of D3DDECLUSAGE_FOG");
-      return 255;
+      return D3D9TO8_MAX_VS_FREG_INDEX;
 
     case D3DDECLUSAGE_DEPTH:
       Logger::warn("ConvertD3D9UsageToD3D8Register:: Unsupported use of D3DDECLUSAGE_DEPTH");
-      return 255;
+      return D3D9TO8_MAX_VS_FREG_INDEX;
 
     case D3DDECLUSAGE_SAMPLE:
       Logger::warn("ConvertD3D9UsageToD3D8Register:: Unsupported use of D3DDECLUSAGE_SAMPLE");
-      return 255;
+      return D3D9TO8_MAX_VS_FREG_INDEX;
 
     default:
       Logger::warn("ConvertD3D9UsageToD3D8Register:: Unknown usage: " + std::to_string(Usage));
-      return 255;
+      return D3D9TO8_MAX_VS_FREG_INDEX;
   }
 }
 
@@ -106,10 +131,13 @@ inline void ConvertD3D9Shader(
 
   // Fixed function shader declarations won't have a function
   if (function9 != nullptr) {
+    Logger::debug("ConvertD3D9Shader:: ****** FUNCTION ******");
+
+    // Clear any previous content
+    function8->clear();
+
     const size_t funcTokenCount = function9->size();
     size_t funcTokenIndex = 0;
-
-    Logger::debug("ConvertD3D9Shader:: ****** FUNCTION ******");
 
     // Function version token
     if (likely(funcTokenIndex < funcTokenCount)) {
@@ -122,12 +150,12 @@ inline void ConvertD3D9Shader(
     }
 
     while (funcTokenIndex < funcTokenCount) {
-      DWORD token  = function9->at(funcTokenIndex);
+      const DWORD token  = function9->at(funcTokenIndex);
       //Logger::debug("ConvertD3D9Shader:: Token:  " + std::to_string(token));
-      DWORD opCode = token & D3DSI_OPCODE_MASK;
+      const DWORD opCode = token & D3DSI_OPCODE_MASK;
       //Logger::debug("ConvertD3D9Shader:: OpCode: " + std::to_string(opCode));
 
-      if (token == D3DVS_END()) {
+      if (unlikely(token == D3DVS_END())) {
         function8->push_back(token);
         break;
       }
@@ -142,25 +170,41 @@ inline void ConvertD3D9Shader(
           funcTokenIndex += 3u;
           break;
         case D3DSIO_DEF: {
+          bool skipDef = false;
+
           Logger::debug("ConvertD3D9Shader:: Parsing a D3DSIO_DEF block");
           const DWORD destReg = function9->at(funcTokenIndex + 1u);
-          const DWORD startAddr = destReg & D3DSP_REGNUM_MASK;
+          const DWORD regNum = destReg & D3DSP_REGNUM_MASK;
+          const DWORD regType = ((destReg & D3DSP_REGTYPE_MASK) >> D3DSP_REGTYPE_SHIFT)
+                              | ((destReg & D3DSP_REGTYPE_MASK2) >> D3DSP_REGTYPE_SHIFT2);
+          Logger::debug("ConvertD3D9Shader:: Register: " + std::to_string(regNum) + ", Type: " + std::to_string(regType));
+          if (regNum >= D3D9TO8_MAX_VS_CREG_INDEX) {
+            Logger::warn("ConvertD3D9Shader:: Unsupported use of constant register number: c" + std::to_string(regNum));
+            skipDef = true;
+          }
+          if (regType != D3DSPR_CONST) {
+            Logger::warn("ConvertD3D9Shader:: Unsupported use of constant register type: " + std::to_string(regType));
+            skipDef = true;
+          }
 
           DWORD defCount = 1u;
           DWORD defIndex = funcTokenIndex + 6u; // Skip the current D3DSIO_DEF block
           while (defIndex + 5u < function9->size()
-            && (function9->at(defIndex) & D3DSI_OPCODE_MASK) == D3DSIO_DEF) {
+            && (function9->at(defIndex) & D3DSI_OPCODE_MASK) == D3DSIO_DEF
+            && (function9->at(defIndex + 1u) & D3DSP_REGNUM_MASK) == regNum) {
             defCount++;
             defIndex += 6u; // Skips an entire D3DSIO_DEF block
           }
 
-          constDefs.push_back(D3DVSD_CONST_D3D8(startAddr, defCount));
-          for (DWORD i = 0; i < defCount; i++) {
-            const DWORD instIndex = funcTokenIndex + (i * 6);
-            constDefs.push_back(function9->at(instIndex + 2));
-            constDefs.push_back(function9->at(instIndex + 3));
-            constDefs.push_back(function9->at(instIndex + 4));
-            constDefs.push_back(function9->at(instIndex + 5));
+          if (likely(!skipDef)) {
+            constDefs.push_back(D3DVSD_CONST_D3D9TO8(regNum, defCount));
+            for (DWORD i = 0; i < defCount; i++) {
+              const DWORD instBaseIndex = funcTokenIndex + (i * 6);
+              constDefs.push_back(function9->at(instBaseIndex + 2));
+              constDefs.push_back(function9->at(instBaseIndex + 3));
+              constDefs.push_back(function9->at(instBaseIndex + 4));
+              constDefs.push_back(function9->at(instBaseIndex + 5));
+            }
           }
 
           funcTokenIndex += (6u * defCount); // Skip all continuous D3DSIO_DEF blocks
@@ -168,20 +212,20 @@ inline void ConvertD3D9Shader(
         }
         case D3DSIO_DEFI: // Integer constants aren't present in D3D8
           Logger::warn("ConvertD3D9Shader:: Unsupported use of D3DSIO_DEFI");
-          if (likely(!D3D9TO8_LENIENT_SHADERS)) {
+          if (likely(!D3D9TO8_LENIENT_SHADERS && !D3D9TO8_LENIENT_SM1_CTYPES)) {
             funcTokenIndex += 6u;
             break;
           }
           [[fallthrough]];
         case D3DSIO_DEFB: // SM2+ VS only
           Logger::warn("ConvertD3D9Shader:: Unsupported use of D3DSIO_DEFB");
-          if (likely(!D3D9TO8_LENIENT_SHADERS)) {
+          if (likely(!D3D9TO8_LENIENT_SHADERS && !D3D9TO8_LENIENT_SM1_CTYPES)) {
             funcTokenIndex += 3u;
             break;
           }
           [[fallthrough]];
         default:
-          function8->push_back(function9->at(funcTokenIndex));
+          function8->push_back(token);
           funcTokenIndex++;
           break;
       }
@@ -190,18 +234,21 @@ inline void ConvertD3D9Shader(
 
   Logger::debug("ConvertD3D9Shader:: ***** DEFINITION *****");
 
+  // Clear any previous content
+  declaration8->clear();
+
   const size_t defTokenCount = declaration9->size();
   size_t defTokenIndex = 0;
-  BYTE currentStream8 = 0xFF;
+  BYTE currentStream = 0xFF;
 
   // Process until we hit D3DDECL_END()
   while (defTokenIndex < defTokenCount) {
     D3DVERTEXELEMENT9& defToken = declaration9->at(defTokenIndex);
 
-    if (defToken.Type == D3DDECLTYPE_UNUSED) {
+    if (unlikely(defToken.Type == D3DDECLTYPE_UNUSED)) {
       // Before ending the definition, slot in any constant declarations
       if (!constDefs.empty()) {
-        Logger::debug("ConvertD3D9Shader:: Including " + std::to_string(constDefs.size() / 5) + " constant definitions");
+        Logger::debug("ConvertD3D9Shader:: Including " + std::to_string(constDefs.size() / 5) + " constant definition(s)");
         for (auto& constDef : constDefs) {
           declaration8->push_back(constDef);
         }
@@ -220,23 +267,22 @@ inline void ConvertD3D9Shader(
     //Logger::debug("ConvertD3D9Shader:: Usage:         " + std::to_string(defToken.Usage));
     //Logger::debug("ConvertD3D9Shader:: UsageIndex:    " + std::to_string(defToken.UsageIndex));
 
-    // Translate the D3D9 vertex declaration to a D3D8 vertex declaration
     //Logger::debug("ConvertD3D9Shader:: ----------------------");
-    if (defToken.Stream != currentStream8) {
-      // Emit a D3DVSD_STREAM token if the current stream changes
-      currentStream8 = defToken.Stream;
-    Logger::debug("ConvertD3D9Shader:: D3D8 Stream:   " + std::to_string(currentStream8));
-      declaration8->push_back(D3DVSD_STREAM_D3D8(currentStream8));
+    // Emit a D3DVSD_STREAM token if the current stream changes
+    if (currentStream != defToken.Stream) {
+      currentStream = defToken.Stream;
+      Logger::debug("ConvertD3D9Shader:: D3D8 Stream:   " + std::to_string(currentStream));
+      declaration8->push_back(D3DVSD_STREAM_D3D9TO8(currentStream));
     }
     const BYTE Reg8 = ConvertD3D9UsageToD3D8Register(static_cast<D3DDECLUSAGE>(defToken.Usage), defToken.UsageIndex);
     const d3d8::D3DVSDT_TYPE Type8 = d3d8::D3DVSDT_TYPE(defToken.Type);
     Logger::debug("ConvertD3D9Shader:: D3D8 Register: " + std::to_string(Reg8) + ", Type: " + std::to_string(Type8));
     // D3D8 doesn't support anything beyond D3DDECLTYPE_SHORT4
-    if (unlikely(defToken.Type > D3D9TO8_MAX_VS_DECL_TYPE)) {
+    if (unlikely(defToken.Type >= D3D9TO8_MAX_VS_DECL_TYPE)) {
       Logger::warn("ConvertD3D9Shader:: Unsupported type: " + std::to_string(defToken.Type));
-    } else if (Reg8 != 255) {
+    } else if (likely(Reg8 != D3D9TO8_MAX_VS_FREG_INDEX)) {
       // Only add a register declaration if we have a valid register
-      declaration8->push_back(D3DVSD_REG_D3D8(Reg8, Type8));
+      declaration8->push_back(D3DVSD_REG_D3D9TO8(Reg8, Type8));
     }
     //Logger::debug("ConvertD3D9Shader:: ---------------------");
 

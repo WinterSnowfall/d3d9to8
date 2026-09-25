@@ -1,9 +1,11 @@
 #pragma once
 
 #include "d3d9_include.h"
-#include "d3d9_com_object.h"
 #include "d3d9_resource.h"
 #include "d3d9_logger.h"
+
+#include "d3d9_surface.h"
+#include "d3d9_volume.h"
 
 #include <array>
 #include <vector>
@@ -90,9 +92,9 @@ public:
 
 private:
 
-  std::vector<ComObject<IDirect3DSurface9>> m_levels;
+  std::vector<ComObject<D3D9Surface, false>> m_levels;
 
-  ComObject<d3d8::IDirect3DTexture8>        m_d3d8;
+  ComObject<d3d8::IDirect3DTexture8>         m_d3d8;
 
 };
 
@@ -135,9 +137,9 @@ public:
 
 private:
 
-  std::array<std::vector<ComObject<IDirect3DSurface9>>, 6> m_levels;
+  std::array<std::vector<ComObject<D3D9Surface, false>>, 6> m_levels;
 
-  ComObject<d3d8::IDirect3DCubeTexture8>                   m_d3d8;
+  ComObject<d3d8::IDirect3DCubeTexture8>                    m_d3d8;
 
 };
 
@@ -172,8 +174,8 @@ public:
 
 private:
 
-  std::vector<ComObject<IDirect3DVolume9>> m_levels;
+  std::vector<ComObject<D3D9Volume, false>> m_levels;
 
-  ComObject<d3d8::IDirect3DVolumeTexture8> m_d3d8;
+  ComObject<d3d8::IDirect3DVolumeTexture8>  m_d3d8;
 
 };

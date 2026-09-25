@@ -1,7 +1,7 @@
 #include "d3d9_query.h"
 
 D3D9Query::D3D9Query(IDirect3DDevice9* device, D3DQUERYTYPE queryType)
-  : m_device ( device )
+  : D3D9DeviceChild(device)
   , m_queryType ( queryType ) {
 }
 

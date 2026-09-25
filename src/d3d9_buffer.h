@@ -1,7 +1,6 @@
 #pragma once
 
 #include "d3d9_include.h"
-#include "d3d9_com_object.h"
 #include "d3d9_resource.h"
 #include "d3d9_logger.h"
 
