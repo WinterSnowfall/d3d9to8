@@ -213,17 +213,21 @@ inline void ConvertD3D9Shader(
         case D3DSIO_DEFI: // Integer constants aren't present in D3D8
           Logger::warn("ConvertD3D9Shader:: Unsupported use of D3DSIO_DEFI");
           if (likely(!D3D9TO8_LENIENT_SHADERS && !D3D9TO8_LENIENT_SM1_CTYPES)) {
-            funcTokenIndex += 6u;
-            break;
+            funcTokenIndex += 6u; // Skip the entire block
+          } else {
+            function8->push_back(token);
+            funcTokenIndex++;
           }
-          [[fallthrough]];
+          break;
         case D3DSIO_DEFB: // SM2+ VS only
           Logger::warn("ConvertD3D9Shader:: Unsupported use of D3DSIO_DEFB");
           if (likely(!D3D9TO8_LENIENT_SHADERS && !D3D9TO8_LENIENT_SM1_CTYPES)) {
-            funcTokenIndex += 3u;
-            break;
+            funcTokenIndex += 3u; // Skip the entire block
+          } else {
+            function8->push_back(token);
+            funcTokenIndex++;
           }
-          [[fallthrough]];
+          break;
         default:
           function8->push_back(token);
           funcTokenIndex++;

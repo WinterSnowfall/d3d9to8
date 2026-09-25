@@ -53,6 +53,10 @@ public:
     return m_d3d8->GetLevelCount();
   }
 
+  d3d8::IDirect3DBaseTexture8* GetD3D8BaseTexture() const {
+    return m_d3d8;
+  }
+
 private:
 
   D3DTEXTUREFILTERTYPE         m_autoGenFilterType = D3DTEXF_LINEAR;
@@ -85,10 +89,6 @@ public:
   HRESULT STDMETHODCALLTYPE UnlockRect(UINT Level);
 
   HRESULT STDMETHODCALLTYPE AddDirtyRect(CONST RECT* pDirtyRect);
-
-  d3d8::IDirect3DTexture8* GetD3D8Texture() const {
-    return m_d3d8.ptr();
-  }
 
 private:
 
@@ -131,10 +131,6 @@ public:
 
   HRESULT STDMETHODCALLTYPE AddDirtyRect(D3DCUBEMAP_FACES Face, CONST RECT* pDirtyRect);
 
-  d3d8::IDirect3DCubeTexture8* GetD3D8CubeTexture() const {
-    return m_d3d8.ptr();
-  }
-
 private:
 
   std::array<std::vector<ComObject<D3D9Surface, false>>, 6> m_levels;
@@ -167,10 +163,6 @@ public:
   HRESULT STDMETHODCALLTYPE UnlockBox(UINT Level);
 
   HRESULT STDMETHODCALLTYPE AddDirtyBox(CONST D3DBOX* pDirtyBox);
-
-  d3d8::IDirect3DVolumeTexture8* GetD3D8VolumeTexture() const {
-    return m_d3d8.ptr();
-  }
 
 private:
 

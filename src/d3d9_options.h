@@ -17,3 +17,6 @@ constexpr bool    D3D9TO8_LENIENT_SHADERS    = false;
 // leaves inline bool and integer constant declarations intact in SM1
 // shaders, both of which aren't technically supported in native D3D8
 constexpr bool    D3D9TO8_LENIENT_SM1_CTYPES = false;
+// Don't error out on DrawIndexedPrimitive calls using a non-zero
+// BaseVertexIndex, even though rendering will be broken in such cases
+constexpr bool    D3D9TO8_LENIENT_BVI_DRAWS  = false;

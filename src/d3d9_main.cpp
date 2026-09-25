@@ -52,7 +52,7 @@ extern "C" {
       }
     }
 
-    ComObject<d3d8::IDirect3D8> d3d8Intf = Direct3DCreate8(D3D_SDK_VERSION_D3D8);
+    ComObject<d3d8::IDirect3D8> d3d8Intf = Direct3DCreate8(D3D_SDK_VERSION);
     if (unlikely(d3d8Intf == nullptr)) {
       Logger::err("Direct3DCreate9:: Failed to create a D3D8 interface!");
       return nullptr;

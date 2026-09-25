@@ -541,54 +541,11 @@ HRESULT STDMETHODCALLTYPE D3D9Device::UpdateTexture(
   if (unlikely(pSourceTexture == nullptr || pDestinationTexture == nullptr))
     return D3DERR_INVALIDCALL;
 
-  d3d8::IDirect3DBaseTexture8* sourceTexture8 = nullptr;
-  d3d8::IDirect3DBaseTexture8* destinationTexture8 = nullptr;
+  D3D9Texture2D* sourceTexture      = reinterpret_cast<D3D9Texture2D*>(pSourceTexture);
+  D3D9Texture2D* destinationTexture = reinterpret_cast<D3D9Texture2D*>(pDestinationTexture);
 
-  const D3DRESOURCETYPE sourceTextureType = pSourceTexture->GetType();
-  switch (sourceTextureType) {
-    case D3DRTYPE_TEXTURE: {
-      D3D9Texture2D* sourceTexture9 = reinterpret_cast<D3D9Texture2D*>(pSourceTexture);
-      sourceTexture8 = sourceTexture9->GetD3D8Texture();
-      break;
-    }
-    case D3DRTYPE_CUBETEXTURE: {
-      D3D9TextureCube* sourceCubeTexture9 = reinterpret_cast<D3D9TextureCube*>(pSourceTexture);
-      sourceTexture8 = sourceCubeTexture9->GetD3D8CubeTexture();
-      break;
-    }
-    case D3DRTYPE_VOLUMETEXTURE: {
-      D3D9Texture3D* sourceVolumeTexture9 = reinterpret_cast<D3D9Texture3D*>(pSourceTexture);
-      sourceTexture8 = sourceVolumeTexture9->GetD3D8VolumeTexture();
-      break;
-    }
-    default:
-      Logger::err("D3D9Device::UpdateTexture: Unsupported resource pSourceTexture type");
-      return D3DERR_INVALIDCALL;
-  }
-
-  const D3DRESOURCETYPE destinationTextureType = pDestinationTexture->GetType();
-  switch (destinationTextureType) {
-    case D3DRTYPE_TEXTURE: {
-      D3D9Texture2D* destinationTexture9 = reinterpret_cast<D3D9Texture2D*>(pDestinationTexture);
-      destinationTexture8 = destinationTexture9->GetD3D8Texture();
-      break;
-    }
-    case D3DRTYPE_CUBETEXTURE: {
-      D3D9TextureCube* destinationCubeTexture9 = reinterpret_cast<D3D9TextureCube*>(pDestinationTexture);
-      destinationTexture8 = destinationCubeTexture9->GetD3D8CubeTexture();
-      break;
-    }
-    case D3DRTYPE_VOLUMETEXTURE: {
-      D3D9Texture3D* destinationVolumeTexture9 = reinterpret_cast<D3D9Texture3D*>(pDestinationTexture);
-      destinationTexture8 = destinationVolumeTexture9->GetD3D8VolumeTexture();
-      break;
-    }
-    default:
-      Logger::err("D3D9Device::UpdateTexture: Unsupported resource pDestinationTexture type");
-      return D3DERR_INVALIDCALL;
-  }
-
-  return m_d3d8->UpdateTexture(sourceTexture8, destinationTexture8);
+  return m_d3d8->UpdateTexture(sourceTexture->GetD3D8BaseTexture(),
+                               destinationTexture->GetD3D8BaseTexture());
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetRenderTargetData(
@@ -952,10 +909,70 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetRenderState(D3DRENDERSTATETYPE State, D
   d3d8::D3DRENDERSTATETYPE State8 = d3d8::D3DRENDERSTATETYPE(State);
 
   switch (State) {
-    default:
-      // Render states above D3DRS_NORMALORDER/D3DRS_NORMALDEGREE (173) don't exist in D3D8
-      if (State > D3DRS_NORMALDEGREE && Value != 0)
+    // For render states above 173, check against the actual defaults in case they're not 0
+    case D3DRS_MINTESSELLATIONLEVEL:
+      if (Value != bitcast<DWORD>(1.0f))
+        Logger::warn("D3D9Device::SetRenderState: Use of unsupported render state: D3DRS_MINTESSELLATIONLEVEL");
+      break;
+
+    case D3DRS_MAXTESSELLATIONLEVEL:
+      if (Value != bitcast<DWORD>(1.0f))
+        Logger::warn("D3D9Device::SetRenderState: Use of unsupported render state: D3DRS_MINTESSELLATIONLEVEL");
+      break;
+
+    case D3DRS_ADAPTIVETESS_Z:
+      if (Value != bitcast<DWORD>(1.0f))
+        Logger::warn("D3D9Device::SetRenderState: Use of unsupported render state: D3DRS_ADAPTIVETESS_Z");
+      break;
+
+    case D3DRS_CCW_STENCILFAIL:
+      if (Value != D3DSTENCILOP_KEEP)
+        Logger::warn("D3D9Device::SetRenderState: Use of unsupported render state: D3DRS_CCW_STENCILFAIL");
+      break;
+
+    case D3DRS_CCW_STENCILZFAIL:
+      if (Value != D3DSTENCILOP_KEEP)
+        Logger::warn("D3D9Device::SetRenderState: Use of unsupported render state: D3DRS_CCW_STENCILZFAIL");
+      break;
+
+    case D3DRS_CCW_STENCILPASS:
+      if (Value != D3DSTENCILOP_KEEP)
+        Logger::warn("D3D9Device::SetRenderState: Use of unsupported render state: D3DRS_CCW_STENCILPASS");
+      break;
+
+    case D3DRS_CCW_STENCILFUNC:
+      if (Value != D3DCMP_ALWAYS)
+        Logger::warn("D3D9Device::SetRenderState: Use of unsupported render state: D3DRS_CCW_STENCILFUNC");
+      break;
+
+    case D3DRS_COLORWRITEENABLE1:
+    case D3DRS_COLORWRITEENABLE2:
+    case D3DRS_COLORWRITEENABLE3:
+      if (Value != 0x0000000F)
         Logger::warn("D3D9Device::SetRenderState: Use of unsupported render state: " + std::to_string(State));
+      break;
+
+    case D3DRS_BLENDFACTOR:
+      if (Value != 0xFFFFFFFF)
+        Logger::warn("D3D9Device::SetRenderState: Use of unsupported render state: D3DRS_D3DRS_BLENDFACTOR");
+      break;
+
+    case D3DRS_SRCBLENDALPHA:
+      if (Value != D3DBLEND_ONE)
+        Logger::warn("D3D9Device::SetRenderState: Use of unsupported render state: D3DRS_SRCBLENDALPHA");
+      break;
+
+    case D3DRS_DESTBLENDALPHA:
+      if (Value != D3DBLEND_ZERO)
+        Logger::warn("D3D9Device::SetRenderState: Use of unsupported render state: D3DRS_DESTBLENDALPHA");
+      break;
+
+    // "If the D3DPMISCCAPS_BLENDOP device capability is not supported, then D3DBLENDOP_ADD is performed."
+    case D3DRS_BLENDOPALPHA:
+      if (Value != D3DBLENDOP_ADD) {
+        Logger::warn("D3D9Device::SetRenderState: Use of unsupported render state: D3DRS_BLENDOPALPHA");
+        return D3D_OK;
+      }
       break;
 
     case D3DRS_DEPTHBIAS: {
@@ -974,6 +991,12 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetRenderState(D3DRENDERSTATETYPE State, D
     case D3DRS_ANTIALIASEDLINEENABLE:
       State8 = d3d8::D3DRS_EDGEANTIALIAS;
       break;
+
+    default:
+      // Render states above D3DRS_NORMALORDER/D3DRS_NORMALDEGREE (173) don't exist in D3D8
+      if (State > D3DRS_NORMALDEGREE && Value != 0)
+        Logger::warn("D3D9Device::SetRenderState: Use of unsupported render state: " + std::to_string(State));
+      break;
   }
 
   return m_d3d8->SetRenderState(State8, Value);
@@ -986,12 +1009,6 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetRenderState(D3DRENDERSTATETYPE State, D
   d3d8::D3DRENDERSTATETYPE State8 = d3d8::D3DRENDERSTATETYPE(State);
 
   switch (State) {
-    default:
-      // Render states above D3DRS_NORMALORDER/D3DRS_NORMALDEGREE (173) don't exist in D3D8
-      if (State > D3DRS_NORMALDEGREE)
-        Logger::debug("D3D9Device::GetRenderState: Use of unsupported render state: " + std::to_string(State));
-      break;
-
     case D3DRS_DEPTHBIAS: {
       static bool s_depthBiasInfoShown = false;
 
@@ -1006,6 +1023,12 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetRenderState(D3DRENDERSTATETYPE State, D
 
     case D3DRS_ANTIALIASEDLINEENABLE:
       State8 = d3d8::D3DRS_EDGEANTIALIAS;
+      break;
+
+    default:
+      // Render states above D3DRS_NORMALORDER/D3DRS_NORMALDEGREE (173) don't exist in D3D8
+      if (State > D3DRS_NORMALDEGREE)
+        Logger::debug("D3D9Device::GetRenderState: Use of unsupported render state: " + std::to_string(State));
       break;
   }
 
@@ -1086,58 +1109,15 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetTexture(DWORD Stage, IDirect3DBaseTextu
   if (unlikely(Stage >= D3D9TO8_MAX_TEXTURE_STAGES))
     return D3DERR_INVALIDCALL;
 
-  D3D9Texture2D* texture9 = reinterpret_cast<D3D9Texture2D*>(pTexture);
+  D3D9Texture2D* baseTexture9 = reinterpret_cast<D3D9Texture2D*>(pTexture);
 
-  if (pTexture != nullptr) {
-    const D3DRESOURCETYPE textureType = pTexture->GetType();
-
-    switch (textureType) {
-      case D3DRTYPE_TEXTURE: {
-        // We make the assumption this is a 2D texture just for caching
-
-        HRESULT hr = m_d3d8->SetTexture(Stage, texture9->GetD3D8Texture());
-        if (unlikely(FAILED(hr))) {
-          Logger::warn("D3D9Device::SetTexture: Failed to set D3D8 texture");
-          return hr;
-        }
-
-        break;
-      }
-      case D3DRTYPE_CUBETEXTURE: {
-        D3D9TextureCube* textureCube9 = reinterpret_cast<D3D9TextureCube*>(pTexture);
-
-        HRESULT hr = m_d3d8->SetTexture(Stage, textureCube9->GetD3D8CubeTexture());
-        if (unlikely(FAILED(hr))) {
-          Logger::warn("D3D9Device::SetTexture: Failed to set D3D8 cube texture");
-          return hr;
-        }
-
-        break;
-      }
-      case D3DRTYPE_VOLUMETEXTURE: {
-        D3D9Texture3D* textureVolume9 = reinterpret_cast<D3D9Texture3D*>(pTexture);
-
-        HRESULT hr = m_d3d8->SetTexture(Stage, textureVolume9->GetD3D8VolumeTexture());
-        if (unlikely(FAILED(hr))) {
-          Logger::warn("D3D9Device::SetTexture: Failed to set D3D8 volume texture");
-          return hr;
-        }
-
-        break;
-      }
-      default:
-        Logger::err("D3D9Device::SetTexture: Unsupported resource type");
-        return D3DERR_INVALIDCALL;
-    }
-  } else {
-    HRESULT hr = m_d3d8->SetTexture(Stage, nullptr);
-    if (unlikely(FAILED(hr))) {
-      Logger::warn("D3D9Device::SetTexture: Failed to clear D3D8 texture");
-      return hr;
-    }
+  HRESULT hr = m_d3d8->SetTexture(Stage, baseTexture9 != nullptr ? baseTexture9->GetD3D8BaseTexture() : nullptr);
+  if (unlikely(FAILED(hr))) {
+    Logger::warn("D3D9Device::SetTexture: Failed to set D3D8 texture");
+    return hr;
   }
 
-  m_textures[Stage] = texture9;
+  m_textures[Stage] = baseTexture9;
 
   return D3D_OK;
 }
@@ -1163,7 +1143,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetTextureStageState(
   // D3D8 doesn't support D3DTSS_CONSTANT (32)
   if (unlikely(Type == D3DTSS_CONSTANT)) {
     if (Value != 0)
-      Logger::warn("D3D9Device::SetTextureStageState: Unsupported D3DTEXTURESTAGESTATETYPE: D3DTSS_CONSTANT");
+      Logger::warn("D3D9Device::SetTextureStageState: Unsupported D3DTEXTURESTAGESTATETYPE D3DTSS_CONSTANT value: "
+                   + std::to_string(Value));
     return D3D_OK;
   }
 
@@ -1195,7 +1176,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetSamplerState(
   // D3DSAMP_SRGBTEXTURE (11), D3DSAMP_ELEMENTINDEX (12) and D3DSAMP_DMAPOFFSET (13) don't exist in D3D8
   if (unlikely(d3d8Type == d3d8::D3DTEXTURESTAGESTATETYPE(-1))) {
     if (Value != 0)
-      Logger::warn("D3D9Device::SetSamplerState: Unsupported D3DSAMPLERSTATETYPE: " + std::to_string(Type));
+      Logger::warn("D3D9Device::SetSamplerState: Unsupported D3DSAMPLERSTATETYPE "
+                  + std::to_string(Type) + " value: " + std::to_string(Value));
     return D3D_OK;
   }
 
@@ -1294,7 +1276,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::DrawIndexedPrimitive(
 
   if (unlikely(BaseVertexIndex < 0)) {
     Logger::err("D3D9Device::DrawIndexedPrimitive: Use of negative BaseVertexIndex");
-    return D3DERR_INVALIDCALL;
+    if (likely(!D3D9TO8_LENIENT_BVI_DRAWS))
+      return D3DERR_INVALIDCALL;
   }
 
   if (likely(m_indices != nullptr)) {

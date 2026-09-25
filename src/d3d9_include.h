@@ -11,6 +11,10 @@
 
 #include <d3d9.h>
 
+// Keep the later imported D3D8 values
+#undef DIRECT3D_VERSION
+#undef D3D_SDK_VERSION
+
 #if defined(__MINGW32__) || defined(__GNUC__)
 
 // Temporarily undefine __CRT_UUID_DECL
@@ -60,22 +64,18 @@ interface DECLSPEC_UUID("4B8AAAFA-140F-42BA-9131-597EAFAA2EAD") d3d8::IDirect3DV
 
 #endif // defined(__MINGW32__) || defined(__GNUC__)
 
-//for some reason we need to specify __declspec(dllexport) for MinGW
+// For some reason we need to specify __declspec(dllexport) for MinGW
 #if defined(__WINE__) || !defined(_WIN32)
   #define DLLEXPORT __attribute__((visibility("default")))
 #else
   #define DLLEXPORT
 #endif
 
-#define D3D_SDK_VERSION_D3D8 220
-
-// Included only in d3d9types.h
-
 #ifndef D3DDECL_END
 #define D3DDECL_END() {0xFF,0,D3DDECLTYPE_UNUSED,0,0,0}
 #endif
 
-// pixel/vertex shader end token
+// Pixel/vertex shader end token
 #ifndef D3DPS_END
 #define D3DPS_END()  0x0000FFFF
 #endif
@@ -94,6 +94,7 @@ interface DECLSPEC_UUID("4B8AAAFA-140F-42BA-9131-597EAFAA2EAD") d3d8::IDirect3DV
 #define D3DVSD_CONST_D3D9TO8(ConstantAddress, Count) \
   (D3DVSD_MAKETOKENTYPE(d3d8::D3DVSD_TOKEN_CONSTMEM) | ((Count) << D3DVSD_CONSTCOUNTSHIFT) | (ConstantAddress))
 
+// Branch prediction helpers
 #ifdef __GNUC__
 #define likely(x) __builtin_expect(bool(x),1)
 #define unlikely(x) __builtin_expect(bool(x),0)
