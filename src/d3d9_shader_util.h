@@ -122,7 +122,7 @@ inline BYTE ConvertD3D9UsageToD3D8Register(D3DDECLUSAGE Usage, BYTE UsageIndex) 
   }
 }
 
-inline void ConvertD3D9Shader(
+inline void ConvertD3D9VertexShader(
         std::vector<DWORD>* declaration8,
         std::vector<D3DVERTEXELEMENT9>* declaration9,
         std::vector<DWORD>* function8,
@@ -131,7 +131,7 @@ inline void ConvertD3D9Shader(
 
   // Fixed function shader declarations won't have a function
   if (function9 != nullptr) {
-    Logger::debug("ConvertD3D9Shader:: ****** FUNCTION ******");
+    Logger::debug("ConvertD3D9VertexShader:: ****** FUNCTION ******");
 
     // Clear any previous content
     function8->clear();
@@ -143,7 +143,7 @@ inline void ConvertD3D9Shader(
     if (likely(funcTokenIndex < funcTokenCount)) {
       const DWORD vsMajor = D3DSHADER_VERSION_MAJOR(function9->at(funcTokenIndex));
       const DWORD vsMinor = D3DSHADER_VERSION_MINOR(function9->at(funcTokenIndex));
-      Logger::debug("ConvertD3D9Shader:: VS version: " + std::to_string(vsMajor) + "." + std::to_string(vsMinor));
+      Logger::debug("ConvertD3D9VertexShader:: VS version: " + std::to_string(vsMajor) + "." + std::to_string(vsMinor));
 
       function8->push_back(function9->at(funcTokenIndex));
       funcTokenIndex++;
@@ -151,9 +151,9 @@ inline void ConvertD3D9Shader(
 
     while (funcTokenIndex < funcTokenCount) {
       const DWORD token  = function9->at(funcTokenIndex);
-      //Logger::debug("ConvertD3D9Shader:: Token:  " + std::to_string(token));
+      //Logger::debug("ConvertD3D9VertexShader:: Token:  " + std::to_string(token));
       const DWORD opCode = token & D3DSI_OPCODE_MASK;
-      //Logger::debug("ConvertD3D9Shader:: OpCode: " + std::to_string(opCode));
+      //Logger::debug("ConvertD3D9VertexShader:: OpCode: " + std::to_string(opCode));
 
       if (unlikely(token == D3DVS_END())) {
         function8->push_back(token);
@@ -165,25 +165,25 @@ inline void ConvertD3D9Shader(
           // TODO: Save the declaration and later use the tokens during definition
           // construction in case they overlap with the current shader definition,
           // and decide which takes priority over the other for a certain register
-          Logger::debug("ConvertD3D9Shader:: Skipping D3DSIO_DCL block");
+          Logger::debug("ConvertD3D9VertexShader:: Skipping D3DSIO_DCL block");
           // D3DSIO_DCL token + usage token + register token for SM1
           funcTokenIndex += 3u;
           break;
         case D3DSIO_DEF: {
           bool skipDef = false;
 
-          Logger::debug("ConvertD3D9Shader:: Parsing a D3DSIO_DEF block");
+          Logger::debug("ConvertD3D9VertexShader:: Parsing a D3DSIO_DEF block");
           const DWORD destReg = function9->at(funcTokenIndex + 1u);
-          const DWORD regNum = destReg & D3DSP_REGNUM_MASK;
           const DWORD regType = ((destReg & D3DSP_REGTYPE_MASK) >> D3DSP_REGTYPE_SHIFT)
                               | ((destReg & D3DSP_REGTYPE_MASK2) >> D3DSP_REGTYPE_SHIFT2);
-          Logger::debug("ConvertD3D9Shader:: Register: " + std::to_string(regNum) + ", Type: " + std::to_string(regType));
-          if (regNum >= D3D9TO8_MAX_VS_CREG_INDEX) {
-            Logger::warn("ConvertD3D9Shader:: Unsupported use of constant register number: c" + std::to_string(regNum));
+          const DWORD regNum = destReg & D3DSP_REGNUM_MASK;
+          Logger::debug("ConvertD3D9VertexShader:: Register: " + std::to_string(regNum) + ", Type: " + std::to_string(regType));
+          if (regType != D3DSPR_CONST) {
+            Logger::warn("ConvertD3D9VertexShader:: Unsupported use of constant register type: " + std::to_string(regType));
             skipDef = true;
           }
-          if (regType != D3DSPR_CONST) {
-            Logger::warn("ConvertD3D9Shader:: Unsupported use of constant register type: " + std::to_string(regType));
+          if (regNum >= D3D9TO8_MAX_VS_CREG_INDEX) {
+            Logger::warn("ConvertD3D9VertexShader:: Unsupported use of constant register number: c" + std::to_string(regNum));
             skipDef = true;
           }
 
@@ -211,7 +211,7 @@ inline void ConvertD3D9Shader(
           break;
         }
         case D3DSIO_DEFI: // Integer constants aren't present in D3D8
-          Logger::warn("ConvertD3D9Shader:: Unsupported use of D3DSIO_DEFI");
+          Logger::warn("ConvertD3D9VertexShader:: Unsupported use of D3DSIO_DEFI");
           if (likely(!D3D9TO8_LENIENT_SHADERS && !D3D9TO8_LENIENT_SM1_CTYPES)) {
             funcTokenIndex += 6u; // Skip the entire block
           } else {
@@ -220,7 +220,7 @@ inline void ConvertD3D9Shader(
           }
           break;
         case D3DSIO_DEFB: // SM2+ VS only
-          Logger::warn("ConvertD3D9Shader:: Unsupported use of D3DSIO_DEFB");
+          Logger::warn("ConvertD3D9VertexShader:: Unsupported use of D3DSIO_DEFB");
           if (likely(!D3D9TO8_LENIENT_SHADERS && !D3D9TO8_LENIENT_SM1_CTYPES)) {
             funcTokenIndex += 3u; // Skip the entire block
           } else {
@@ -236,7 +236,7 @@ inline void ConvertD3D9Shader(
     }
   }
 
-  Logger::debug("ConvertD3D9Shader:: ***** DEFINITION *****");
+  Logger::debug("ConvertD3D9VertexShader:: ***** DEFINITION *****");
 
   // Clear any previous content
   declaration8->clear();
@@ -252,45 +252,74 @@ inline void ConvertD3D9Shader(
     if (unlikely(defToken.Type == D3DDECLTYPE_UNUSED)) {
       // Before ending the definition, slot in any constant declarations
       if (!constDefs.empty()) {
-        Logger::debug("ConvertD3D9Shader:: Including " + std::to_string(constDefs.size() / 5) + " constant definition(s)");
+        Logger::debug("ConvertD3D9VertexShader:: Including " + std::to_string(constDefs.size() / 5) + " constant definition(s)");
         for (auto& constDef : constDefs) {
           declaration8->push_back(constDef);
         }
       }
 
       declaration8->push_back(D3DVSD_END());
-      Logger::debug("ConvertD3D9Shader:: **********************");
+      Logger::debug("ConvertD3D9VertexShader:: **********************");
       break;
     }
 
-    //Logger::debug("ConvertD3D9Shader:: Element:       " + std::to_string(defTokenIndex));
-    //Logger::debug("ConvertD3D9Shader:: Stream:        " + std::to_string(defToken.Stream));
-    //Logger::debug("ConvertD3D9Shader:: Offset:        " + std::to_string(defToken.Offset)); // Ignored in D3D8
-    //Logger::debug("ConvertD3D9Shader:: Type:          " + std::to_string(defToken.Type));
-    //Logger::debug("ConvertD3D9Shader:: Method:        " + std::to_string(defToken.Method)); // Ignored in D3D8
-    //Logger::debug("ConvertD3D9Shader:: Usage:         " + std::to_string(defToken.Usage));
-    //Logger::debug("ConvertD3D9Shader:: UsageIndex:    " + std::to_string(defToken.UsageIndex));
+    //Logger::debug("ConvertD3D9VertexShader:: Element:       " + std::to_string(defTokenIndex));
+    //Logger::debug("ConvertD3D9VertexShader:: Stream:        " + std::to_string(defToken.Stream));
+    //Logger::debug("ConvertD3D9VertexShader:: Offset:        " + std::to_string(defToken.Offset)); // Ignored in D3D8
+    //Logger::debug("ConvertD3D9VertexShader:: Type:          " + std::to_string(defToken.Type));
+    //Logger::debug("ConvertD3D9VertexShader:: Method:        " + std::to_string(defToken.Method)); // Ignored in D3D8
+    //Logger::debug("ConvertD3D9VertexShader:: Usage:         " + std::to_string(defToken.Usage));
+    //Logger::debug("ConvertD3D9VertexShader:: UsageIndex:    " + std::to_string(defToken.UsageIndex));
 
-    //Logger::debug("ConvertD3D9Shader:: ----------------------");
+    //Logger::debug("ConvertD3D9VertexShader:: ----------------------");
     // Emit a D3DVSD_STREAM token if the current stream changes
     if (currentStream != defToken.Stream) {
       currentStream = defToken.Stream;
-      Logger::debug("ConvertD3D9Shader:: D3D8 Stream:   " + std::to_string(currentStream));
+      Logger::debug("ConvertD3D9VertexShader:: D3D8 Stream:   " + std::to_string(currentStream));
       declaration8->push_back(D3DVSD_STREAM_D3D9TO8(currentStream));
     }
     const BYTE Reg8 = ConvertD3D9UsageToD3D8Register(static_cast<D3DDECLUSAGE>(defToken.Usage), defToken.UsageIndex);
     const d3d8::D3DVSDT_TYPE Type8 = d3d8::D3DVSDT_TYPE(defToken.Type);
-    Logger::debug("ConvertD3D9Shader:: D3D8 Register: " + std::to_string(Reg8) + ", Type: " + std::to_string(Type8));
+    Logger::debug("ConvertD3D9VertexShader:: D3D8 Register: " + std::to_string(Reg8) + ", Type: " + std::to_string(Type8));
     // D3D8 doesn't support anything beyond D3DDECLTYPE_SHORT4
     if (unlikely(defToken.Type >= D3D9TO8_MAX_VS_DECL_TYPE)) {
-      Logger::warn("ConvertD3D9Shader:: Unsupported type: " + std::to_string(defToken.Type));
+      Logger::warn("ConvertD3D9VertexShader:: Unsupported type: " + std::to_string(defToken.Type));
     } else if (likely(Reg8 != D3D9TO8_MAX_VS_FREG_INDEX)) {
       // Only add a register declaration if we have a valid register
       declaration8->push_back(D3DVSD_REG_D3D9TO8(Reg8, Type8));
     }
-    //Logger::debug("ConvertD3D9Shader:: ---------------------");
+    //Logger::debug("ConvertD3D9VertexShader:: ---------------------");
 
     defTokenIndex++;
   }
+}
 
+// No conversion is needed, but use of integer/boolean constants are known limitations
+inline void ValidateD3D9PixelShader(std::vector<DWORD>* function9) {
+  Logger::debug("ValidateD3D9PixelShader:: ****** FUNCTION ******");
+
+  const size_t funcTokenCount = function9->size();
+  size_t funcTokenIndex = 0;
+
+  // Function version token
+  if (likely(funcTokenIndex < funcTokenCount)) {
+    const DWORD psMajor = D3DSHADER_VERSION_MAJOR(function9->at(funcTokenIndex));
+    const DWORD psMinor = D3DSHADER_VERSION_MINOR(function9->at(funcTokenIndex));
+    Logger::debug("ValidateD3D9PixelShader:: PS version: " + std::to_string(psMajor) + "." + std::to_string(psMinor));
+    funcTokenIndex++;
+  }
+
+  while (funcTokenIndex < funcTokenCount) {
+    const DWORD token  = function9->at(funcTokenIndex);
+    //Logger::debug("ValidateD3D9PixelShader:: Token:  " + std::to_string(token));
+    //const DWORD opCode = token & D3DSI_OPCODE_MASK;
+    //Logger::debug("ValidateD3D9PixelShader:: OpCode: " + std::to_string(opCode));
+
+    if (unlikely(token == D3DPS_END()))
+      break;
+
+    funcTokenIndex++;
+  }
+
+  Logger::debug("ValidateD3D9PixelShader:: **********************");
 }

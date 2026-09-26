@@ -474,8 +474,6 @@ private:
   // Shaders and state blocks aren't counted as losable resources
   // by D3D8, but reset them anyway to remain consistent with D3D9
   inline void ClearCachedD3D8Objects() {
-    m_presentParams.BackBufferCount = std::max(m_presentParams.BackBufferCount, 1u);
-
     m_renderTarget = nullptr;
     m_depthStencil = nullptr;
 
@@ -486,14 +484,15 @@ private:
 
     m_indices = nullptr;
 
-    m_streamSource.fill(nullptr);
     m_streamSourceStride.fill(0u);
+    m_streamSource.fill(nullptr);
 
     m_textures.fill(nullptr);
 
+    m_fvf = 0u;
+    m_vertexDecl = nullptr;
     m_vertexShader = nullptr;
     m_pixelShader = nullptr;
-    m_vertexDecl = nullptr;
   }
 
   inline void CacheD3D8ObjectsAndRestoreState() {
@@ -522,7 +521,7 @@ private:
 
   bool                                        m_canSWVP        = false;
 
-  std::mutex                                  m_deviceLock;
+  std::recursive_mutex                        m_deviceLock;
   bool                                        m_isMultitheaded = false;
 
   ComObject<IDirect3D9>                       m_intf;

@@ -4,6 +4,8 @@
 #include "d3d9_logger.h"
 #include "d3d9_options.h"
 
+#include <utility>
+
 using Logger = ThreadSafeLogger;
 
 inline void ConvertCaps9(const d3d8::D3DCAPS8& caps8, D3DCAPS9* pCaps9) {
@@ -143,7 +145,7 @@ inline d3d8::D3DMULTISAMPLE_TYPE ConvertMultiSampleType8(D3DMULTISAMPLE_TYPE mul
         return d3d8::D3DMULTISAMPLE_NONE;
       } else {
         // Don't select more than 16 samples, as that's the limit of the enum
-        return d3d8::D3DMULTISAMPLE_TYPE(1u << std::max<DWORD>(multiSampleQuality, 4u));
+        return d3d8::D3DMULTISAMPLE_TYPE(std::min<DWORD>(1u << multiSampleQuality, 16u));
       }
     default:
       return d3d8::D3DMULTISAMPLE_TYPE(multiSampleType);
@@ -193,7 +195,14 @@ inline d3d8::D3DPRESENT_PARAMETERS ConvertPresentParameters8(D3DPRESENT_PARAMETE
   Logger::debug("pParams->Flags: " + std::to_string(pParams->Flags));
   // D3DPRESENTFLAG_LOCKABLE_BACKBUFFER (1) is the only flag supported by D3D8
   if (pParams->Flags > D3DPRESENTFLAG_LOCKABLE_BACKBUFFER) {
-    Logger::warn("ConvertPresentParameters8: Stripping unsupported flags: " + std::to_string(pParams->Flags));
+    if (pParams->Flags & D3DPRESENTFLAG_DISCARD_DEPTHSTENCIL) {
+      static bool s_discardWarningShown = false;
+
+      if (!std::exchange(s_discardWarningShown, true))
+        Logger::warn("ConvertPresentParameters8: Unsupported use of D3DPRESENTFLAG_DISCARD_DEPTHSTENCIL");
+    }
+    // We don't really care about any other present flags, other than the two above
+    Logger::debug("ConvertPresentParameters8: Stripping unsupported flags: " + std::to_string(pParams->Flags));
     pParams->Flags &= D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
   }
   params.Flags = pParams->Flags;
@@ -254,11 +263,16 @@ inline d3d8::D3DDEVTYPE ConvertDeviceType8(D3DDEVTYPE devType) {
 
 inline void ConvertD3D9Usage(DWORD* usage, UINT* levels) {
   switch (*usage) {
-    case D3DUSAGE_AUTOGENMIPMAP: // Doesn't exist in D3D8
-      Logger::debug("ConvertD3D9Usage:: Unsupported use of D3DUSAGE_AUTOGENMIPMAP");
+    case D3DUSAGE_AUTOGENMIPMAP: { // Doesn't exist in D3D8
+      static bool s_unsupportedWarningShown = false;
+
+      if (!std::exchange(s_unsupportedWarningShown, true))
+        Logger::warn("ConvertD3D9Usage:: Unsupported use of D3DUSAGE_AUTOGENMIPMAP");
+
       *usage &= ~D3DUSAGE_AUTOGENMIPMAP;
       *levels = 1u;
       break;
+    }
     default:
       break;
   }
@@ -276,6 +290,18 @@ inline bool IsUnsupportedD3D9Format(const D3DFORMAT format) {
 inline bool IsSupportedD3D8AdapterFormat(const D3DFORMAT format) {
   return format == D3DFMT_X8R8G8B8
       || format == D3DFMT_R5G6B5;
+}
+
+inline bool IsDepthFormat(const D3DFORMAT format) {
+  return format == D3DFMT_D16_LOCKABLE
+      || format == D3DFMT_D32
+      || format == D3DFMT_D15S1
+      || format == D3DFMT_D24S8
+      || format == D3DFMT_D24X8
+      || format == D3DFMT_D24X4S4
+      || format == D3DFMT_D16
+      || format == D3DFMT_D32F_LOCKABLE
+      || format == D3DFMT_D24FS8;
 }
 
 template<typename T, typename J>

@@ -164,15 +164,15 @@ UINT STDMETHODCALLTYPE D3D9Device::GetNumberOfSwapChains() {
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::Reset(D3DPRESENT_PARAMETERS* pPresentationParameters) {
-  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  std::unique_lock<std::recursive_mutex> deviceLock(m_deviceLock, std::defer_lock);
   if (m_isMultitheaded)
     deviceLock.lock();
 
-  ClearCachedD3D8Objects();
-
   d3d8::D3DPRESENT_PARAMETERS params8 = ConvertPresentParameters8(pPresentationParameters);
-  // Cache only after conversion, because some corrections may be applied
+  // Clear/cache only after conversion, because some corrections may be applied
   m_presentParams = *pPresentationParameters;
+
+  ClearCachedD3D8Objects();
 
   HRESULT hr = m_d3d8->Reset(&params8);
   // Failed calls can be legitimate cues that make calling apps release
@@ -200,7 +200,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetBackBuffer(
         UINT                iBackBuffer,
         D3DBACKBUFFER_TYPE  Type,
         IDirect3DSurface9** ppBackBuffer) {
-  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  std::unique_lock<std::recursive_mutex> deviceLock(m_deviceLock, std::defer_lock);
   if (m_isMultitheaded)
     deviceLock.lock();
 
@@ -237,7 +237,11 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetRasterStatus(UINT iSwapChain, D3DRASTER
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::SetDialogBoxMode(BOOL bEnableDialogs) {
-  Logger::warn("D3D9Device::SetDialogBoxMode: Unsupported call!");
+  static bool s_unsupportedWarningShown = false;
+
+  if (!std::exchange(s_unsupportedWarningShown, true))
+    Logger::warn("D3D9Device::SetDialogBoxMode: Unsupported call!");
+
   return D3D_OK;
 }
 
@@ -272,6 +276,9 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateTexture(
 
   ClearReturnPointer(ppTexture);
 
+  if (unlikely(pSharedHandle != nullptr))
+    Logger::err("D3D9Device::CreateTexture: Unsupported use of shared resources");
+
   if (unlikely(IsUnsupportedD3D9Format(Format)))
     Logger::err("D3D9Device::CreateTexture: Use of unsupported format: " + std::to_string(Format));
 
@@ -294,7 +301,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateTexture(
     return hr;
   }
 
-  *ppTexture = ref(new D3D9Texture2D(this, std::move(d3d8Texture), Levels));
+  *ppTexture = ref(new D3D9Texture2D(this, std::move(d3d8Texture)));
 
   return D3D_OK;
 }
@@ -313,6 +320,9 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVolumeTexture(
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppVolumeTexture);
+
+  if (unlikely(pSharedHandle != nullptr))
+    Logger::err("D3D9Device::CreateVolumeTexture: Unsupported use of shared resources");
 
   if (unlikely(IsUnsupportedD3D9Format(Format)))
     Logger::err("D3D9Device::CreateVolumeTexture: Use of unsupported format: " + std::to_string(Format));
@@ -337,7 +347,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVolumeTexture(
     return hr;
   }
 
-  *ppVolumeTexture = ref(new D3D9Texture3D(this, std::move(d3d8VolumeTexture), Levels));
+  *ppVolumeTexture = ref(new D3D9Texture3D(this, std::move(d3d8VolumeTexture)));
 
   return D3D_OK;
 }
@@ -354,6 +364,9 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateCubeTexture(
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppCubeTexture);
+
+  if (unlikely(pSharedHandle != nullptr))
+    Logger::err("D3D9Device::CreateCubeTexture: Unsupported use of shared resources");
 
   if (unlikely(IsUnsupportedD3D9Format(Format)))
     Logger::err("D3D9Device::CreateCubeTexture: Use of unsupported format: " + std::to_string(Format));
@@ -376,7 +389,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateCubeTexture(
     return hr;
   }
 
-  *ppCubeTexture = ref(new D3D9TextureCube(this, std::move(d3d8CubeTexture), Levels));
+  *ppCubeTexture = ref(new D3D9TextureCube(this, std::move(d3d8CubeTexture)));
 
   return D3D_OK;
 }
@@ -392,6 +405,9 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVertexBuffer(
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppVertexBuffer);
+
+  if (unlikely(pSharedHandle != nullptr))
+    Logger::err("D3D9Device::CreateVertexBuffer: Unsupported use of shared resources");
 
   ComObject<d3d8::IDirect3DVertexBuffer8> d3d8VertexBuffer;
   HRESULT hr = m_d3d8->CreateVertexBuffer(Length, Usage, FVF,
@@ -417,6 +433,9 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateIndexBuffer(
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppIndexBuffer);
+
+  if (unlikely(pSharedHandle != nullptr))
+    Logger::err("D3D9Device::CreateIndexBuffer: Unsupported use of shared resources");
 
   ComObject<d3d8::IDirect3DIndexBuffer8> d3d8IndexBuffer;
   HRESULT hr = m_d3d8->CreateIndexBuffer(Length, Usage, d3d8::D3DFORMAT(Format),
@@ -444,6 +463,9 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateRenderTarget(
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppSurface);
+
+  if (unlikely(pSharedHandle != nullptr))
+    Logger::err("D3D9Device::CreateRenderTarget: Unsupported use of shared resources");
 
   if (unlikely(IsUnsupportedD3D9Format(Format)))
     Logger::err("D3D9Device::CreateRenderTarget: Use of unsupported format: " + std::to_string(Format));
@@ -485,11 +507,19 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateDepthStencilSurface(
 
   ClearReturnPointer(ppSurface);
 
+  if (unlikely(pSharedHandle != nullptr))
+    Logger::err("D3D9Device::CreateDepthStencilSurface: Unsupported use of shared resources");
+
   if (unlikely(IsUnsupportedD3D9Format(Format)))
     Logger::err("D3D9Device::CreateDepthStencilSurface: Use of unsupported format: " + std::to_string(Format));
 
-  if (unlikely(Discard))
-    Logger::warn("D3D9Device::CreateDepthStencilSurface: Unsupported use of discardable depth stencil");
+  // Apparently this is rather common, but D3D8 doesn't have an equivalent
+  if (Discard) {
+    static bool s_discardWarningShown = false;
+
+    if (!std::exchange(s_discardWarningShown, true))
+      Logger::warn("D3D9Device::CreateDepthStencilSurface: Unsupported use of discardable depth stencil");
+  }
 
   ComObject<d3d8::IDirect3DSurface8> d3d8DepthStencil;
   HRESULT hr = m_d3d8->CreateDepthStencilSurface(Width, Height,
@@ -594,7 +624,21 @@ HRESULT STDMETHODCALLTYPE D3D9Device::StretchRect(
 
   // CopyRects doesn't support format conversion...
   if (sourceSurfaceDesc.Format != destSurfaceDesc.Format) {
-    Logger::warn("D3D9Device::StretchRect: Unsupported use of format conversion");
+    static bool s_conversionWarningShown = false;
+
+    if (!std::exchange(s_conversionWarningShown, true))
+      Logger::warn("D3D9Device::StretchRect: Unsupported use of format conversion");
+
+    return D3D_OK; // Don't error out, as some games explode because of it
+  }
+
+  // CopyRects doesn't support any depth stencil surface operations either
+  if (IsDepthFormat(sourceSurfaceDesc.Format) || IsDepthFormat(destSurfaceDesc.Format)) {
+    static bool s_depthSurfaceWarningShown = false;
+
+    if (!std::exchange(s_depthSurfaceWarningShown, true))
+      Logger::warn("D3D9Device::StretchRect: Unsupported use of depth stencil surfaces");
+
     return D3D_OK; // Don't error out, as some games explode because of it
   }
 
@@ -611,7 +655,11 @@ HRESULT STDMETHODCALLTYPE D3D9Device::StretchRect(
 
   // Unfortunately, this will be hit in the vast majority of cases
   if (doesStretching) {
-    Logger::warn("D3D9Device::StretchRect: Unsupported use of stretching");
+    static bool s_stretchingWarningShown = false;
+
+    if (!std::exchange(s_stretchingWarningShown, true))
+      Logger::warn("D3D9Device::StretchRect: Unsupported use of stretching");
+
     return D3D_OK; // Don't error out, as some games explode because of it
   }
 
@@ -635,7 +683,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::ColorFill(
         IDirect3DSurface9* pSurface,
   const RECT*              pRect,
         D3DCOLOR           Color) {
-  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  std::unique_lock<std::recursive_mutex> deviceLock(m_deviceLock, std::defer_lock);
   if (m_isMultitheaded)
     deviceLock.lock();
 
@@ -665,11 +713,6 @@ HRESULT STDMETHODCALLTYPE D3D9Device::ColorFill(
 
     const DWORD clearFlags = m_renderTarget == destSurface9 ? D3DCLEAR_TARGET : D3DCLEAR_ZBUFFER;
 
-    if (clearFlags & D3DCLEAR_TARGET)
-      Logger::debug("D3D9Device::ColorFill: Clearing the current render target");
-    else if (clearFlags & D3DCLEAR_ZBUFFER)
-      Logger::debug("D3D9Device::ColorFill: Clearing the current depth stencil");
-
     m_d3d8->SetViewport(&clearViewport);
 
     HRESULT hr = m_d3d8->Clear(pRect == nullptr ? 0 : 1, reinterpret_cast<const d3d8::D3DRECT*>(pRect),
@@ -680,7 +723,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::ColorFill(
     m_d3d8->SetViewport(&currentViewport);
   // TODO: Potentially handle other renderable surfaces
   } else {
-    Logger::warn("D3D9Device::ColorFill: Unsupported surface use!");
+    static bool s_unsupportedWarningShown = false;
+
+    if (!std::exchange(s_unsupportedWarningShown, true))
+      Logger::warn("D3D9Device::ColorFill: Unsupported surface use");
   }
 
   return D3D_OK;
@@ -697,6 +743,9 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateOffscreenPlainSurface(
     return D3DERR_INVALIDCALL;
 
   ClearReturnPointer(ppSurface);
+
+  if (unlikely(pSharedHandle != nullptr))
+    Logger::err("D3D9Device::CreateOffscreenPlainSurface: Unsupported use of shared resources");
 
   if (unlikely(IsUnsupportedD3D9Format(Format)))
     Logger::err("D3D9Device::CreateOffscreenPlainSurface: Use of unsupported format: " + std::to_string(Format));
@@ -724,7 +773,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateOffscreenPlainSurface(
 HRESULT STDMETHODCALLTYPE D3D9Device::SetRenderTarget(
         DWORD              RenderTargetIndex,
         IDirect3DSurface9* pRenderTarget) {
-  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  std::unique_lock<std::recursive_mutex> deviceLock(m_deviceLock, std::defer_lock);
   if (m_isMultitheaded)
     deviceLock.lock();
 
@@ -741,10 +790,18 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetRenderTarget(
 
   D3D9Surface* d3d9RenderTarget = reinterpret_cast<D3D9Surface*>(pRenderTarget);
 
-  HRESULT hr = m_d3d8->SetRenderTarget(d3d9RenderTarget != nullptr ? d3d9RenderTarget->GetD3D8Surface() : nullptr, nullptr);
+  // Careful not to clear the existing depth stencil when setting a new render target...
+  HRESULT hr = m_d3d8->SetRenderTarget(d3d9RenderTarget != nullptr ? d3d9RenderTarget->GetD3D8Surface() : nullptr,
+                                       m_depthStencil != nullptr ? m_depthStencil->GetD3D8Surface() : nullptr);
+  // ...but we can't know for sure if the intention isn't to eventually clear or swap the depth
+  // stencil as well, so retry the call without a depth stencil if it fails on the first pass
   if (unlikely(FAILED(hr))) {
-    Logger::warn("D3D9Device::SetRenderTarget: Failed to set D3D8 render target");
-    return hr;
+    hr = m_d3d8->SetRenderTarget(d3d9RenderTarget != nullptr ? d3d9RenderTarget->GetD3D8Surface() : nullptr, nullptr);
+    if (unlikely(FAILED(hr))) {
+      Logger::debug("D3D9Device::SetRenderTarget: Failed to set D3D8 render target");
+      return hr;
+    }
+    m_depthStencil = nullptr;
   }
 
   m_renderTarget = d3d9RenderTarget;
@@ -755,7 +812,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetRenderTarget(
 HRESULT STDMETHODCALLTYPE D3D9Device::GetRenderTarget(
         DWORD               RenderTargetIndex,
         IDirect3DSurface9** ppRenderTarget) {
-  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  std::unique_lock<std::recursive_mutex> deviceLock(m_deviceLock, std::defer_lock);
   if (m_isMultitheaded)
     deviceLock.lock();
 
@@ -786,7 +843,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetRenderTarget(
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::SetDepthStencilSurface(IDirect3DSurface9* pNewZStencil) {
-  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  std::unique_lock<std::recursive_mutex> deviceLock(m_deviceLock, std::defer_lock);
   if (m_isMultitheaded)
     deviceLock.lock();
 
@@ -797,7 +854,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetDepthStencilSurface(IDirect3DSurface9* 
   // Aquila fails to set a depth stencil repeateadly for some reason...
   HRESULT hr = m_d3d8->SetRenderTarget(nullptr, d3d9DepthStencil != nullptr ? d3d9DepthStencil->GetD3D8Surface() : nullptr);
   if (unlikely(FAILED(hr))) {
-    Logger::warn("D3D9Device::SetDepthStencilSurface: Failed to set D3D8 depth stencil");
+    Logger::debug("D3D9Device::SetDepthStencilSurface: Failed to set D3D8 depth stencil");
     return hr;
   }
 
@@ -807,7 +864,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetDepthStencilSurface(IDirect3DSurface9* 
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetDepthStencilSurface(IDirect3DSurface9** ppZStencilSurface) {
-  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  std::unique_lock<std::recursive_mutex> deviceLock(m_deviceLock, std::defer_lock);
   if (m_isMultitheaded)
     deviceLock.lock();
 
@@ -1098,7 +1155,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetClipStatus(D3DCLIPSTATUS9* pClipStatus)
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetTexture(DWORD Stage, IDirect3DBaseTexture9** ppTexture) {
-  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  std::unique_lock<std::recursive_mutex> deviceLock(m_deviceLock, std::defer_lock);
   if (m_isMultitheaded)
     deviceLock.lock();
 
@@ -1114,7 +1171,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetTexture(DWORD Stage, IDirect3DBaseTextu
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::SetTexture(DWORD Stage, IDirect3DBaseTexture9* pTexture) {
-  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  std::unique_lock<std::recursive_mutex> deviceLock(m_deviceLock, std::defer_lock);
   if (m_isMultitheaded)
     deviceLock.lock();
 
@@ -1220,7 +1277,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetScissorRect(const RECT* pRect) {
   if (unlikely(pRect == nullptr))
     return D3DERR_INVALIDCALL;
 
-  Logger::debug("D3D9Device::SetScissorRect: Unsupported call!");
+  static bool s_unsupportedWarningShown = false;
+
+  if (!std::exchange(s_unsupportedWarningShown, true))
+    Logger::warn("D3D9Device::SetScissorRect: Unsupported call!");
 
   return D3D_OK;
 }
@@ -1229,7 +1289,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetScissorRect(RECT* pRect) {
   if (unlikely(pRect == nullptr))
     return D3DERR_INVALIDCALL;
 
-  Logger::debug("D3D9Device::GetScissorRect: Unsupported call!");
+  static bool s_unsupportedWarningShown = false;
+
+  if (!std::exchange(s_unsupportedWarningShown, true))
+    Logger::warn("D3D9Device::GetScissorRect: Unsupported call!");
 
   RECT rect = { };
   *pRect = rect;
@@ -1279,7 +1342,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::DrawIndexedPrimitive(
         UINT             NumVertices,
         UINT             StartIndex,
         UINT             PrimitiveCount) {
-  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  std::unique_lock<std::recursive_mutex> deviceLock(m_deviceLock, std::defer_lock);
   if (m_isMultitheaded)
     deviceLock.lock();
 
@@ -1310,7 +1373,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::DrawPrimitiveUP(
         UINT             PrimitiveCount,
   const void*            pVertexStreamZeroData,
         UINT             VertexStreamZeroStride) {
-  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  std::unique_lock<std::recursive_mutex> deviceLock(m_deviceLock, std::defer_lock);
   if (m_isMultitheaded)
     deviceLock.lock();
 
@@ -1333,7 +1396,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::DrawIndexedPrimitiveUP(
         D3DFORMAT        IndexDataFormat,
   const void*            pVertexStreamZeroData,
         UINT             VertexStreamZeroStride) {
-  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  std::unique_lock<std::recursive_mutex> deviceLock(m_deviceLock, std::defer_lock);
   if (m_isMultitheaded)
     deviceLock.lock();
 
@@ -1383,7 +1446,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVertexDeclaration(
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexDeclaration(IDirect3DVertexDeclaration9* pDecl) {
-  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  std::unique_lock<std::recursive_mutex> deviceLock(m_deviceLock, std::defer_lock);
   if (m_isMultitheaded)
     deviceLock.lock();
 
@@ -1393,8 +1456,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexDeclaration(IDirect3DVertexDeclar
     // Fixed function vertex shader declaration
     if (m_vertexShader == nullptr) {
       if (vertexDecl->NeedsDefinitionUpdate(nullptr)) {
-        ConvertD3D9Shader(vertexDecl->GetDeclaration8(), vertexDecl->GetDeclaration9(),
-                          nullptr, nullptr);
+        ConvertD3D9VertexShader(vertexDecl->GetDeclaration8(), vertexDecl->GetDeclaration9(),
+                                nullptr, nullptr);
         vertexDecl->SetFunctionOrigin(nullptr);
         vertexDecl->SetVSHandle(0u);
       }
@@ -1420,8 +1483,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexDeclaration(IDirect3DVertexDeclar
       }
     } else {
       if (vertexDecl->NeedsDefinitionUpdate(m_vertexShader.ptr())) {
-        ConvertD3D9Shader(vertexDecl->GetDeclaration8(), vertexDecl->GetDeclaration9(),
-                          m_vertexShader->GetFunction8(), m_vertexShader->GetFunction9());
+        ConvertD3D9VertexShader(vertexDecl->GetDeclaration8(), vertexDecl->GetDeclaration9(),
+                                m_vertexShader->GetFunction8(), m_vertexShader->GetFunction9());
         vertexDecl->SetFunctionOrigin(m_vertexShader.ptr());
         m_vertexShader->SetDeclarationOrigin(vertexDecl);
         m_vertexShader->SetVSHandle(0u);
@@ -1458,7 +1521,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexDeclaration(IDirect3DVertexDeclar
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetVertexDeclaration(IDirect3DVertexDeclaration9** ppDecl) {
-  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  std::unique_lock<std::recursive_mutex> deviceLock(m_deviceLock, std::defer_lock);
   if (m_isMultitheaded)
     deviceLock.lock();
 
@@ -1519,7 +1582,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateVertexShader(
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexShader(IDirect3DVertexShader9* pShader) {
-  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  std::unique_lock<std::recursive_mutex> deviceLock(m_deviceLock, std::defer_lock);
   if (m_isMultitheaded)
     deviceLock.lock();
 
@@ -1530,8 +1593,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexShader(IDirect3DVertexShader9* pS
     // otherwise a non-FF vertex shader creation will fail in D3D8
     if (likely(m_vertexDecl != nullptr)) {
       if (vertexShader9->NeedsFunctionUpdate(m_vertexDecl.ptr())) {
-        ConvertD3D9Shader(m_vertexDecl->GetDeclaration8(), m_vertexDecl->GetDeclaration9(),
-                          vertexShader9->GetFunction8(), vertexShader9->GetFunction9());
+        ConvertD3D9VertexShader(m_vertexDecl->GetDeclaration8(), m_vertexDecl->GetDeclaration9(),
+                                vertexShader9->GetFunction8(), vertexShader9->GetFunction9());
         m_vertexDecl->SetFunctionOrigin(vertexShader9);
         vertexShader9->SetDeclarationOrigin(m_vertexDecl.ptr());
         vertexShader9->SetVSHandle(0u);
@@ -1561,8 +1624,8 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexShader(IDirect3DVertexShader9* pS
     // Revert to the fixed function declaration otherwise
     if (likely(m_fvf == 0u && m_vertexDecl != nullptr)) {
       if (m_vertexDecl->NeedsDefinitionUpdate(nullptr)) {
-        ConvertD3D9Shader(m_vertexDecl->GetDeclaration8(), m_vertexDecl->GetDeclaration9(),
-                          nullptr, nullptr);
+        ConvertD3D9VertexShader(m_vertexDecl->GetDeclaration8(), m_vertexDecl->GetDeclaration9(),
+                                nullptr, nullptr);
         m_vertexDecl->SetFunctionOrigin(nullptr);
         m_vertexDecl->SetVSHandle(0u);
       }
@@ -1598,7 +1661,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetVertexShader(IDirect3DVertexShader9* pS
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetVertexShader(IDirect3DVertexShader9** ppShader) {
-  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  std::unique_lock<std::recursive_mutex> deviceLock(m_deviceLock, std::defer_lock);
   if (m_isMultitheaded)
     deviceLock.lock();
 
@@ -1668,7 +1731,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetVertexShaderConstantI(
   if (unlikely(pConstantData == nullptr))
     return D3DERR_INVALIDCALL;
 
-  Logger::debug("D3D9Device::GetVertexShaderConstantI: Unsupported call!");
+  static bool s_unsupportedWarningShown = false;
+
+  if (!std::exchange(s_unsupportedWarningShown, true))
+    Logger::warn("D3D9Device::GetVertexShaderConstantI: Unsupported call!");
 
   memset(pConstantData, 0, Vector4iCount * sizeof(int));
 
@@ -1699,7 +1765,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetVertexShaderConstantB(
   if (unlikely(pConstantData == nullptr))
     return D3DERR_INVALIDCALL;
 
-  Logger::debug("D3D9Device::GetVertexShaderConstantB: Unsupported call!");
+  static bool s_unsupportedWarningShown = false;
+
+  if (!std::exchange(s_unsupportedWarningShown, true))
+    Logger::warn("D3D9Device::GetVertexShaderConstantB: Unsupported call!");
 
   memset(pConstantData, 0, BoolCount * sizeof(BOOL));
 
@@ -1711,7 +1780,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetStreamSource(
         IDirect3DVertexBuffer9* pStreamData,
         UINT                    OffsetInBytes,
         UINT                    Stride) {
-  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  std::unique_lock<std::recursive_mutex> deviceLock(m_deviceLock, std::defer_lock);
   if (m_isMultitheaded)
     deviceLock.lock();
 
@@ -1742,7 +1811,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetStreamSource(
         IDirect3DVertexBuffer9** ppStreamData,
         UINT*                    pOffsetInBytes,
         UINT*                    pStride) {
-  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  std::unique_lock<std::recursive_mutex> deviceLock(m_deviceLock, std::defer_lock);
   if (m_isMultitheaded)
     deviceLock.lock();
 
@@ -1777,7 +1846,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetStreamSourceFreq(UINT StreamNumber, UIN
   if (unlikely(StreamNumber >= D3D9TO8_MAX_STREAMS))
     return D3DERR_INVALIDCALL;
 
-  Logger::debug("D3D9Device::SetStreamSourceFreq: Unsupported call!");
+  static bool s_unsupportedWarningShown = false;
+
+  if (!std::exchange(s_unsupportedWarningShown, true))
+    Logger::warn("D3D9Device::SetStreamSourceFreq: Unsupported call!");
 
   *pSetting = 0u;
 
@@ -1785,7 +1857,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetStreamSourceFreq(UINT StreamNumber, UIN
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::SetIndices(IDirect3DIndexBuffer9* pIndexData) {
-  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  std::unique_lock<std::recursive_mutex> deviceLock(m_deviceLock, std::defer_lock);
   if (m_isMultitheaded)
     deviceLock.lock();
 
@@ -1803,7 +1875,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetIndices(IDirect3DIndexBuffer9* pIndexDa
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetIndices(IDirect3DIndexBuffer9** ppIndexData) {
-  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  std::unique_lock<std::recursive_mutex> deviceLock(m_deviceLock, std::defer_lock);
   if (m_isMultitheaded)
     deviceLock.lock();
 
@@ -1849,13 +1921,15 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreatePixelShader(
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::SetPixelShader(IDirect3DPixelShader9* pShader) {
-  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  std::unique_lock<std::recursive_mutex> deviceLock(m_deviceLock, std::defer_lock);
   if (m_isMultitheaded)
     deviceLock.lock();
 
   D3D9PixelShader* pixelShader9 = reinterpret_cast<D3D9PixelShader*>(pShader);
 
   if (pShader != nullptr) {
+    ValidateD3D9PixelShader(pixelShader9->GetFunction9());
+
     HRESULT hr = m_d3d8->SetPixelShader(pixelShader9->GetPSHandle());
     if (unlikely(FAILED(hr))) {
       Logger::warn("D3D9Device::SetPixelShader: Failed to set D3D8 pixel shader");
@@ -1863,7 +1937,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetPixelShader(IDirect3DPixelShader9* pSha
         return hr;
     }
   } else {
-    m_d3d8->SetPixelShader(0);
+    m_d3d8->SetPixelShader(0u);
   }
 
   m_pixelShader = pixelShader9;
@@ -1872,7 +1946,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetPixelShader(IDirect3DPixelShader9* pSha
 }
 
 HRESULT STDMETHODCALLTYPE D3D9Device::GetPixelShader(IDirect3DPixelShader9** ppShader) {
-  std::unique_lock<std::mutex> deviceLock(m_deviceLock, std::defer_lock);
+  std::unique_lock<std::recursive_mutex> deviceLock(m_deviceLock, std::defer_lock);
   if (m_isMultitheaded)
     deviceLock.lock();
 
@@ -1942,7 +2016,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetPixelShaderConstantI(
   if (unlikely(pConstantData == nullptr))
     return D3DERR_INVALIDCALL;
 
-  Logger::debug("D3D9Device::GetPixelShaderConstantI: Unsupported call!");
+  static bool s_unsupportedWarningShown = false;
+
+  if (!std::exchange(s_unsupportedWarningShown, true))
+    Logger::warn("D3D9Device::GetPixelShaderConstantI: Unsupported call!");
 
   memset(pConstantData, 0, Vector4iCount * sizeof(int));
 
@@ -1973,7 +2050,10 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetPixelShaderConstantB(
   if (unlikely(pConstantData == nullptr))
     return D3DERR_INVALIDCALL;
 
-  Logger::debug("D3D9Device::GetPixelShaderConstantB: Unsupported call!");
+  static bool s_unsupportedWarningShown = false;
+
+  if (!std::exchange(s_unsupportedWarningShown, true))
+    Logger::warn("D3D9Device::GetPixelShaderConstantB: Unsupported call!");
 
   memset(pConstantData, 0, BoolCount * sizeof(BOOL));
 

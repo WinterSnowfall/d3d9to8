@@ -7,8 +7,9 @@ Not to be confused with the much more useful [d3d8to9](https://github.com/crosir
 Known limitations include:
 - D3D9Ex, though it might be convinced to work to some degree at a later date
 - Use of any SM2+ programmable shaders
-- Use of SM1 declarations with unsupported register types (e.g. `D3DDECLUSAGE_TANGENT`) or integer constants
-- Calls to `StretchRect` that actually do stretching (the vast majority will)
+- Use of SM1 declarations with unsupported register types (e.g. `D3DDECLUSAGE_TANGENT`) or integer/boolean constants
+- Calls to `StretchRect` that actually do stretching or format conversions (the vast majority will)
+- Any form of D3D9 specific resource sharing
 - Surface calls to `GetDC`/`ReleaseDC`
 - Use of various D3D9 exclusive sampler/texture stage states
 - Surface/texture formats unique to D3D9, such as `D3DFMT_A16B16G16R16F`
@@ -21,7 +22,7 @@ Known limitations include:
 - Other minor D3D9 exclusive API calls, with specific paths which can't be implemented in D3D8
 
 > [!IMPORTANT]
-> Please don't submit issues or treat this as a serious project, because it's not. It will work at times, especially with early D3D9 games, but in the vast majority of cases it's not expected to work properly/correctly. Its purpose is mainly for testing and bringing otherworldly things into existence, such as 64-bit D3D8.
+> Please don't submit issues or treat this as an entirely serious project, because it's not. It will work at times, especially with early D3D9 games, but in the vast majority of cases it's not expected to work properly/correctly. Its purpose is mainly for testing and bringing otherworldly things into existence, such as 64-bit D3D8.
 
 ## FAQ
 
@@ -33,17 +34,22 @@ Why the dark forces of Chaos, of course. No, it was my love for D3D8 mostly, and
 
 Among known fully working titles, I can mention:
 - _W40K: Dawn of War_ (the original tetralogy, including _Soulstorm_)
+- _W40K: Fire Warrior_
 - _Aliens versus Predator (Classic 2000)_
 - _Gun_
+- _The Lord of the Rings: War of the Ring_
 - _Emperor of the Fading Suns Enhanced_
 - _Machinarium_ (legacy DX9 version)
 - _Sid Meier's Pirates! (Live the Life)_ (with shaders disabled)
 - _Majesty HD_
 - _Outcast 1.1_
+- _Battle Engine Aquila_
+- _Children of the Nile_ ("Fixed" shadows only)
 - _Freedom Force vs The 3rd Reich_
 - _Beyond Divinity_
 - _Seven Kingdoms: Ancient Adversaries_
 - _Amnesia: Memories_
+- _Close Combat: Gateway to Caen / Panthers in the Fog_ (if you can put up with some missing UI element backgrounds)
 
 ...and a few others. The list might expand in the future, but probably not by a lot.
 

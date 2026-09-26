@@ -4,11 +4,12 @@
 
 D3D9Texture2D::D3D9Texture2D(
     IDirect3DDevice9* device,
-    ComObject<d3d8::IDirect3DTexture8>&& d3d8Texture,
-    UINT levels)
+    ComObject<d3d8::IDirect3DTexture8>&& d3d8Texture)
   : D3D9BaseTexture(device, reinterpret_cast<d3d8::IDirect3DBaseTexture8*>(d3d8Texture.ptr()))
   , m_d3d8 ( std::move(d3d8Texture) ) {
-  m_levels.resize(levels);
+  // Some games pass 0 for auto-level generation,
+  // so always query to get the actual level count
+  m_levels.resize(m_d3d8->GetLevelCount());
 }
 
 D3D9Texture2D::~D3D9Texture2D() {
@@ -95,12 +96,14 @@ HRESULT STDMETHODCALLTYPE D3D9Texture2D::AddDirtyRect(CONST RECT* pDirtyRect) {
 
 D3D9TextureCube::D3D9TextureCube(
     IDirect3DDevice9* device,
-    ComObject<d3d8::IDirect3DCubeTexture8>&& d3d8CubeTexture,
-    UINT levels)
+    ComObject<d3d8::IDirect3DCubeTexture8>&& d3d8CubeTexture)
   : D3D9BaseTexture(device, reinterpret_cast<d3d8::IDirect3DBaseTexture8*>(d3d8CubeTexture.ptr()))
   , m_d3d8 ( std::move(d3d8CubeTexture) ) {
+  // Some games pass 0 for auto-level generation,
+  // so always query to get the actual level count
+  const DWORD levelCount = m_d3d8->GetLevelCount();
   for (auto& faceLevel : m_levels) {
-    faceLevel.resize(levels);
+    faceLevel.resize(levelCount);
   }
 }
 
@@ -200,11 +203,12 @@ HRESULT STDMETHODCALLTYPE D3D9TextureCube::AddDirtyRect(D3DCUBEMAP_FACES Face, C
 
 D3D9Texture3D::D3D9Texture3D(
     IDirect3DDevice9* device,
-    ComObject<d3d8::IDirect3DVolumeTexture8>&& d3d8VolumeTexture,
-    UINT levels)
+    ComObject<d3d8::IDirect3DVolumeTexture8>&& d3d8VolumeTexture)
   : D3D9BaseTexture(device, reinterpret_cast<d3d8::IDirect3DBaseTexture8*>(d3d8VolumeTexture.ptr()))
   , m_d3d8 ( std::move(d3d8VolumeTexture) ) {
-  m_levels.resize(levels);
+  // Some games pass 0 for auto-level generation,
+  // so always query to get the actual level count
+  m_levels.resize(m_d3d8->GetLevelCount());
 }
 
 D3D9Texture3D::~D3D9Texture3D() {

@@ -78,6 +78,10 @@ public:
     return m_handle;
   }
 
+  std::vector<DWORD>* GetFunction9() {
+    return &m_function;
+  }
+
 private:
 
   DWORD                       m_handle = 0u;
