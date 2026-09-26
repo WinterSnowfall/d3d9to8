@@ -140,7 +140,7 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CheckDeviceType(
     return D3DERR_NOTAVAILABLE;
   }
 
-  return m_d3d8->CheckDeviceType(Adapter, d3d8::D3DDEVTYPE(DevType),
+  return m_d3d8->CheckDeviceType(Adapter, ConvertDeviceType8(DevType),
                                  d3d8::D3DFORMAT(AdapterFormat),
                                  d3d8::D3DFORMAT(BackBufferFormat), bWindowed);
 }
@@ -162,7 +162,7 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CheckDeviceFormat(
 
   HRESULT hr = m_d3d8->CheckDeviceFormat(
     Adapter,
-    (d3d8::D3DDEVTYPE)DeviceType,
+    ConvertDeviceType8(DeviceType),
     (d3d8::D3DFORMAT)AdapterFormat,
     Usage,
     (d3d8::D3DRESOURCETYPE)RType,
@@ -192,7 +192,7 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CheckDeviceMultiSampleType(
 
   return m_d3d8->CheckDeviceMultiSampleType(
     Adapter,
-    (d3d8::D3DDEVTYPE)DeviceType,
+    ConvertDeviceType8(DeviceType),
     (d3d8::D3DFORMAT)SurfaceFormat,
     Windowed,
     (d3d8::D3DMULTISAMPLE_TYPE)MultiSampleType
@@ -210,7 +210,7 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CheckDepthStencilMatch(
     return D3DERR_NOTAVAILABLE;
   }
 
-  return m_d3d8->CheckDepthStencilMatch(Adapter, d3d8::D3DDEVTYPE(DeviceType),
+  return m_d3d8->CheckDepthStencilMatch(Adapter, ConvertDeviceType8(DeviceType),
                                         d3d8::D3DFORMAT(AdapterFormat),
                                         d3d8::D3DFORMAT(RenderTargetFormat),
                                         d3d8::D3DFORMAT(DepthStencilFormat));
@@ -236,7 +236,7 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::GetDeviceCaps(
     return D3DERR_INVALIDCALL;
 
   d3d8::D3DCAPS8 caps8;
-  HRESULT hr = m_d3d8->GetDeviceCaps(Adapter, d3d8::D3DDEVTYPE(DeviceType), &caps8);
+  HRESULT hr = m_d3d8->GetDeviceCaps(Adapter, ConvertDeviceType8(DeviceType), &caps8);
   if (unlikely(FAILED(hr)))
     return hr;
 
@@ -264,7 +264,7 @@ HRESULT STDMETHODCALLTYPE D3D9Interface::CreateDevice(
   d3d8::D3DPRESENT_PARAMETERS params8 = ConvertPresentParameters8(pPresentationParameters);
 
   ComObject<d3d8::IDirect3DDevice8> d3d8Device;
-  HRESULT hr = m_d3d8->CreateDevice(Adapter, static_cast<d3d8::D3DDEVTYPE>(DeviceType),
+  HRESULT hr = m_d3d8->CreateDevice(Adapter, ConvertDeviceType8(DeviceType),
                                     hFocusWindow, BehaviorFlags, &params8,
                                     &d3d8Device);
   if (unlikely(FAILED(hr))) {

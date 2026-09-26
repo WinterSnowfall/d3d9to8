@@ -135,6 +135,21 @@ inline void ConvertCaps9(const d3d8::D3DCAPS8& caps8, D3DCAPS9* pCaps9) {
   //
 }
 
+inline d3d8::D3DMULTISAMPLE_TYPE ConvertMultiSampleType8(D3DMULTISAMPLE_TYPE multiSampleType, DWORD multiSampleQuality) {
+  switch (multiSampleType) {
+    // D3DMULTISAMPLE_NONMASKABLE doesn't exist in D3D8, so we need to convert it
+    case D3DMULTISAMPLE_NONMASKABLE:
+      if (unlikely(multiSampleQuality == 0u)) {
+        return d3d8::D3DMULTISAMPLE_NONE;
+      } else {
+        // Don't select more than 16 samples, as that's the limit of the enum
+        return d3d8::D3DMULTISAMPLE_TYPE(1u << std::max<DWORD>(multiSampleQuality, 4u));
+      }
+    default:
+      return d3d8::D3DMULTISAMPLE_TYPE(multiSampleType);
+  }
+}
+
 inline d3d8::D3DPRESENT_PARAMETERS ConvertPresentParameters8(D3DPRESENT_PARAMETERS* pParams) {
   // A 0 back buffer count needs to be corrected and made visible to the D3D9 application as well
   pParams->BackBufferCount = std::max(pParams->BackBufferCount, 1u);
@@ -144,19 +159,20 @@ inline d3d8::D3DPRESENT_PARAMETERS ConvertPresentParameters8(D3DPRESENT_PARAMETE
     pParams->BackBufferCount = 1;
 
   d3d8::D3DPRESENT_PARAMETERS params;
-  //Logger::debug("pParams->BackBufferWidth: " + std::to_string(pParams->BackBufferWidth));
+  Logger::debug("pParams->BackBufferWidth: " + std::to_string(pParams->BackBufferWidth));
   params.BackBufferWidth = pParams->BackBufferWidth;
-  //Logger::debug("pParams->BackBufferHeight: " + std::to_string(pParams->BackBufferHeight));
+  Logger::debug("pParams->BackBufferHeight: " + std::to_string(pParams->BackBufferHeight));
   params.BackBufferHeight = pParams->BackBufferHeight;
-  //Logger::debug("pParams->BackBufferFormat: " + std::to_string(pParams->BackBufferFormat));
+  Logger::debug("pParams->BackBufferFormat: " + std::to_string(pParams->BackBufferFormat));
   params.BackBufferFormat = d3d8::D3DFORMAT(pParams->BackBufferFormat);
-  //Logger::debug("pParams->BackBufferCount: " + std::to_string(pParams->BackBufferCount));
+  Logger::debug("pParams->BackBufferCount: " + std::to_string(pParams->BackBufferCount));
   params.BackBufferCount = pParams->BackBufferCount;
 
-  //Logger::debug("pParams->MultiSampleType: " + std::to_string(pParams->MultiSampleType));
-  params.MultiSampleType = d3d8::D3DMULTISAMPLE_TYPE(pParams->MultiSampleType);
+  Logger::debug("pParams->MultiSampleType: " + std::to_string(pParams->MultiSampleType));
+  Logger::debug("pParams->MultiSampleQuality: " + std::to_string(pParams->MultiSampleQuality));
+  params.MultiSampleType = ConvertMultiSampleType8(pParams->MultiSampleType, pParams->MultiSampleQuality);
 
-  //Logger::debug("pParams->SwapEffect: " + std::to_string(pParams->SwapEffect));
+  Logger::debug("pParams->SwapEffect: " + std::to_string(pParams->SwapEffect));
   // Remap D3DSWAPEFFECT_COPY to D3DSWAPEFFECT_COPY_VSYNC in D3D8
   // if any VSYNC specific D3DPRESENT_INTERVAL values are used
   if (pParams->SwapEffect == D3DSWAPEFFECT_COPY &&
@@ -168,26 +184,30 @@ inline d3d8::D3DPRESENT_PARAMETERS ConvertPresentParameters8(D3DPRESENT_PARAMETE
 
   //Logger::debug("pParams->hDeviceWindow: " + std::to_string(pParams->hDeviceWindow));
   params.hDeviceWindow = pParams->hDeviceWindow;
-  //Logger::debug("pParams->Windowed: " + std::to_string(pParams->Windowed));
+  Logger::debug("pParams->Windowed: " + std::to_string(pParams->Windowed));
   params.Windowed = pParams->Windowed;
-  //Logger::debug("pParams->EnableAutoDepthStencil: " + std::to_string(pParams->EnableAutoDepthStencil));
+  Logger::debug("pParams->EnableAutoDepthStencil: " + std::to_string(pParams->EnableAutoDepthStencil));
   params.EnableAutoDepthStencil = pParams->EnableAutoDepthStencil;
-  //Logger::debug("pParams->AutoDepthStencilFormat: " + std::to_string(pParams->AutoDepthStencilFormat));
+  Logger::debug("pParams->AutoDepthStencilFormat: " + std::to_string(pParams->AutoDepthStencilFormat));
   params.AutoDepthStencilFormat = d3d8::D3DFORMAT(pParams->AutoDepthStencilFormat);
-  //Logger::debug("pParams->Flags: " + std::to_string(pParams->Flags));
+  Logger::debug("pParams->Flags: " + std::to_string(pParams->Flags));
+  // D3DPRESENTFLAG_LOCKABLE_BACKBUFFER (1) is the only flag supported by D3D8
+  if (pParams->Flags > D3DPRESENTFLAG_LOCKABLE_BACKBUFFER) {
+    Logger::warn("ConvertPresentParameters8: Stripping unsupported flags: " + std::to_string(pParams->Flags));
+    pParams->Flags &= D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
+  }
   params.Flags = pParams->Flags;
 
-  //Logger::debug("pParams->FullScreen_RefreshRateInHz: " + std::to_string(pParams->FullScreen_RefreshRateInHz));
+  Logger::debug("pParams->FullScreen_RefreshRateInHz: " + std::to_string(pParams->FullScreen_RefreshRateInHz));
   params.FullScreen_RefreshRateInHz = pParams->FullScreen_RefreshRateInHz;
 
-  //Logger::debug("pParams->PresentationInterval: " + std::to_string(pParams->PresentationInterval));
+  Logger::debug("pParams->PresentationInterval: " + std::to_string(pParams->PresentationInterval));
   UINT PresentationInterval = pParams->PresentationInterval;
   // In D3D8 nothing except D3DPRESENT_INTERVAL_DEFAULT can be used as a flag for windowed presentation
   if (pParams->Windowed) {
     Logger::warn("ConvertPresentParameters8: Forcing D3DPRESENT_INTERVAL_DEFAULT for windowed presentation");
     PresentationInterval = D3DPRESENT_INTERVAL_DEFAULT;
   }
-  // FullScreen_PresentationInterval -> PresentationInterval
   params.FullScreen_PresentationInterval = PresentationInterval;
 
   return params;
@@ -218,6 +238,17 @@ inline d3d8::D3DTEXTURESTAGESTATETYPE GetTextureStateType8(const D3DSAMPLERSTATE
     case D3DSAMP_MAXMIPLEVEL:   return d3d8::D3DTSS_MAXMIPLEVEL;
     case D3DSAMP_MAXANISOTROPY: return d3d8::D3DTSS_MAXANISOTROPY;
     default:                    return d3d8::D3DTEXTURESTAGESTATETYPE(-1u);
+  }
+}
+
+inline d3d8::D3DDEVTYPE ConvertDeviceType8(D3DDEVTYPE devType) {
+  switch (devType) {
+    default:
+    case D3DDEVTYPE_HAL:     return d3d8::D3DDEVTYPE_HAL;
+    case D3DDEVTYPE_REF:     return d3d8::D3DDEVTYPE_REF;
+    case D3DDEVTYPE_SW:      return d3d8::D3DDEVTYPE_SW;
+    // There's no NULLREF dev type in D3D8, so try REF
+    case D3DDEVTYPE_NULLREF: return d3d8::D3DDEVTYPE_REF;
   }
 }
 

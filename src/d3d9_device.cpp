@@ -30,12 +30,6 @@ D3D9Device::D3D9Device(
     Logger::info("D3D9Device:: Using D3DCREATE_SOFTWARE_VERTEXPROCESSING");
     m_canSWVP = true;
   }
-
-  Logger::debug("D3D9Device:: Windowed: " + std::to_string(m_presentParams.Windowed));
-  Logger::debug("D3D9Device:: BackBufferFormat: " + std::to_string(m_presentParams.BackBufferFormat));
-  Logger::debug("D3D9Device:: BackBufferCount: " + std::to_string(m_presentParams.BackBufferCount));
-  Logger::debug("D3D9Device:: EnableAutoDepthStencil: " + std::to_string(m_presentParams.EnableAutoDepthStencil));
-  Logger::debug("D3D9Device:: AutoDepthStencilFormat: " + std::to_string(m_presentParams.AutoDepthStencilFormat));
 }
 
 D3D9Device::~D3D9Device() {
@@ -457,7 +451,7 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateRenderTarget(
   ComObject<d3d8::IDirect3DSurface8> d3d8RenderTarget;
   HRESULT hr = m_d3d8->CreateRenderTarget(Width, Height,
                                           d3d8::D3DFORMAT(Format),
-                                          d3d8::D3DMULTISAMPLE_TYPE(MultiSample),
+                                          ConvertMultiSampleType8(MultiSample, MultisampleQuality),
                                           Lockable, &d3d8RenderTarget);
   if (unlikely(FAILED(hr))) {
     Logger::warn("D3D9Device::CreateRenderTarget: Failed to create D3D8 render target surface");
@@ -494,10 +488,13 @@ HRESULT STDMETHODCALLTYPE D3D9Device::CreateDepthStencilSurface(
   if (unlikely(IsUnsupportedD3D9Format(Format)))
     Logger::err("D3D9Device::CreateDepthStencilSurface: Use of unsupported format: " + std::to_string(Format));
 
+  if (unlikely(Discard))
+    Logger::warn("D3D9Device::CreateDepthStencilSurface: Unsupported use of discardable depth stencil");
+
   ComObject<d3d8::IDirect3DSurface8> d3d8DepthStencil;
   HRESULT hr = m_d3d8->CreateDepthStencilSurface(Width, Height,
                                                  d3d8::D3DFORMAT(Format),
-                                                 d3d8::D3DMULTISAMPLE_TYPE(MultiSample),
+                                                 ConvertMultiSampleType8(MultiSample, MultisampleQuality),
                                                  &d3d8DepthStencil);
   if (unlikely(FAILED(hr))) {
     Logger::warn("D3D9Device::CreateDepthStencilSurface: Failed to create D3D8 depth stencil surface");
@@ -822,8 +819,9 @@ HRESULT STDMETHODCALLTYPE D3D9Device::GetDepthStencilSurface(IDirect3DSurface9**
   if (unlikely(m_depthStencil == nullptr)) {
     ComObject<d3d8::IDirect3DSurface8> d3d8ZStencilSurface;
     HRESULT hr = m_d3d8->GetDepthStencilSurface(&d3d8ZStencilSurface);
+    // Can legitimately fail in case of no auto depth stencil or a null depth stencil
     if (unlikely(FAILED(hr))) {
-      Logger::warn("D3D9Device::GetDepthStencilSurface: Failed to get D3D8 depth stencil");
+      Logger::debug("D3D9Device::GetDepthStencilSurface: Failed to get D3D8 depth stencil");
       return hr;
     }
 
@@ -973,6 +971,20 @@ HRESULT STDMETHODCALLTYPE D3D9Device::SetRenderState(D3DRENDERSTATETYPE State, D
         Logger::warn("D3D9Device::SetRenderState: Use of unsupported render state: D3DRS_BLENDOPALPHA");
         return D3D_OK;
       }
+      break;
+
+    case D3DRS_SRCBLEND:
+      // D3D8 doesn't support D3DBLEND_BLENDFACTOR or D3DBLEND_INVBLENDFACTOR
+      if (Value > D3DBLEND_BOTHINVSRCALPHA)
+        Logger::warn("D3D9Device::SetRenderState: Use of unsupported D3DRS_SRCBLEND value: "
+                    + std::to_string(Value));
+      break;
+
+    case D3DRS_DESTBLEND:
+      // D3D8 doesn't support D3DBLEND_BLENDFACTOR or D3DBLEND_INVBLENDFACTOR
+      if (Value > D3DBLEND_BOTHINVSRCALPHA)
+        Logger::warn("D3D9Device::SetRenderState: Use of unsupported D3DRS_DESTBLEND value: "
+                    + std::to_string(Value));
       break;
 
     case D3DRS_DEPTHBIAS: {
